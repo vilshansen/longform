@@ -1,9 +1,3 @@
----
-title: Notes on Modular System Design
-blurb: A practical exploration of dependency injection, domain boundary isolation, and defensive perimeter security in high-throughput services.
-date: 25 Aug 2026
----
-
 Modern software systems demand a clear boundary between domain logic and infrastructural concerns. When building high-throughput services, maintaining strict decoupling ensures that underlying data stores or transport protocols can be swapped without mutating core business rules.
 
 ## Core Isolation Principles

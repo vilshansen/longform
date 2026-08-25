@@ -6,16 +6,10 @@
     "date": "25 Aug 2026"
   },
   {
-    "file": "how-content-discovery-works.md",
-    "title": "How Automatic Content Discovery Works",
-    "blurb": "An inside look at static directory indexing and client-side front matter parsing.",
+    "file": "sample.md",
+    "title": "Sample document",
+    "blurb": "An inside look at a sample document.",
     "date": "25 Aug 2026"
-  },
-  {
-    "file": "silent-cities.md",
-    "title": "The Architecture of Silent Cities",
-    "blurb": "How ancient plateaus and volcanic concrete inspired an architectural philosophy prioritizing acoustic economy.",
-    "date": "18 Aug 2026"
   },
   {
     "file": "getting-started.md",
