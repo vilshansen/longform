@@ -1,4 +1,10 @@
 [
+{
+    "file": "how-this-site-is-built.md",
+    "title": "How This Site Is Built",
+    "blurb": "An architectural breakdown of a zero-build, static Markdown document library running on GitHub Pages.",
+    "date": "25 Aug 2026"
+  },
   {
     "file": "architecture-notes.md",
     "title": "Notes on Modular System Design",
