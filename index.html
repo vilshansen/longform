@@ -3,34 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Markdown Reader</title>
+    <title>Longform</title>
+    <!-- Google Fonts for Cormorant Garamond (Title) & Source Serif 4 (Body) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400..700;1,8..60,400..700&display=swap" rel="stylesheet">
+    <!-- Marked.js for parsing Markdown -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
-:root {
-    --bg-color: #fdf6e3;
-    --text-main: #2b303a;
-    --text-muted: #657b83;
-    --border-color: #e0d7c6;
-    --code-bg: #f5eedc;
-    --link-color: #268bd2;
-    --max-width: 680px;
-    --font-serif: "Source Serif 4", Charter, Georgia, serif;
-    --font-display: "Cormorant Garamond", Georgia, serif; /* Distinct title font */
-    --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-}
+        :root {
+            --bg-color: #fdf6e3;       /* Warm cream / off-white background */
+            --text-main: #2b303a;      /* Deep soft slate/charcoal */
+            --text-muted: #657b83;     /* Muted slate for metadata & subtitles */
+            --border-color: #e0d7c6;   /* Soft warm grey border */
+            --code-bg: #f5eedc;        /* Tinted cream background for code blocks */
+            --link-color: #268bd2;     /* Muted reading-friendly blue */
+            --max-width: 680px;
+            --font-serif: "Source Serif 4", Charter, Georgia, serif;
+            --font-display: "Cormorant Garamond", Georgia, serif;
+            --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
         body {
             background-color: var(--bg-color);
             color: var(--text-main);
             font-family: var(--font-serif);
             font-size: 1.2rem;
             line-height: 1.75;
-            padding: 4rem 1.25rem 6rem;
+            padding: 4rem 1.25rem 6rem 1.25rem;
             -webkit-font-smoothing: antialiased;
             min-height: 100vh;
             display: flex;
@@ -38,61 +44,189 @@
             align-items: center;
         }
 
-        #content { width: 100%; max-width: var(--max-width); }
-        
-        .nav-slot { font-family: var(--font-sans); font-size: 0.875rem; min-height: 1.5rem; margin-bottom: 2.5rem; }
-        .nav-footer { font-family: var(--font-sans); font-size: 0.875rem; margin-top: 4rem; padding-top: 2rem; border-top: 1px solid var(--border-color); }
-        .nav-slot a, .nav-footer a { color: var(--text-muted); text-decoration: none; }
-        
-.toc-title { 
-    font-family: var(--font-display);
-    font-size: 3.2rem;          /* Scaled up slightly to suit Cormorant's proportions */
-    font-weight: 600;
-    letter-spacing: -0.02em;    /* Tightened tracking for a sharp wordmark feel */
-    line-height: 1.1;
-    margin-bottom: 0.5em; 
-    color: var(--text-main);
-}
-        .toc-intro { font-size: 1.2rem; margin-bottom: 2.5em; }
-.toc-list { 
-    list-style-type: none;  /* Removes bullet points */
-    padding-left: 0;        /* Flushes links to the left margin */
-}
-.toc-item { 
-    margin-bottom: 2.25em;  /* Slightly increased spacing between entries */
-}
-        .toc-link { font-size: 1.25rem; font-weight: 600; color: var(--link-color); text-decoration: none; }
-        /* Clean, perfectly centered separator dot */
-.toc-date {
-    display: inline;
-    font-family: var(--font-sans);
-    font-size: 0.85rem;
-    color: var(--text-muted);
-    font-weight: 400;
-}
+        #content {
+            width: 100%;
+            max-width: var(--max-width);
+        }
 
-.toc-date::before {
-    content: "·";
-    display: inline-block;
-    padding: 0 0.5em; /* Perfectly balanced horizontal padding */
-    font-weight: 700;
-    color: var(--text-muted);
-    opacity: 0.6;
-}
-        .toc-blurb { font-size: 1.05rem; line-height: 1.5; margin-top: 0.1em; }
-        
-        .article-date { font-family: var(--font-sans); font-size: 0.9rem; color: var(--text-muted); margin-top: -1.25em; margin-bottom: 2em; }
-        
-        h1, h2, h3 { color: var(--text-main); font-weight: 700; margin-top: 2.25em; margin-bottom: 0.75em; }
+        /* Navigation Header & Footer / Back Button */
+        .nav-header {
+            font-family: var(--font-sans);
+            font-size: 0.875rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .nav-footer {
+            font-family: var(--font-sans);
+            font-size: 0.875rem;
+            margin-top: 4rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .nav-header a, .nav-footer a {
+            color: var(--text-muted);
+            text-decoration: none;
+            transition: color 0.15s ease;
+        }
+
+        .nav-header a:hover, .nav-footer a:hover {
+            color: var(--text-main);
+        }
+
+        /* Index / Table of Contents Styling */
+        .toc-container {
+            font-family: var(--font-serif);
+        }
+
+        .toc-title {
+            font-family: var(--font-display);
+            font-size: 3.2rem;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+            line-height: 1.1;
+            margin-bottom: 0.5em;
+            color: var(--text-main);
+        }
+
+        .toc-intro {
+            font-size: 1.2rem;
+            line-height: 1.75;
+            color: var(--text-main);
+            margin-bottom: 2.5em;
+        }
+
+        .toc-list {
+            list-style-type: none;
+            padding: 0;
+            margin-bottom: 1.6em;
+        }
+
+        .toc-item {
+            margin-bottom: 2em;
+        }
+
+        .toc-link {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--link-color);
+            text-decoration: none;
+            transition: opacity 0.15s ease;
+        }
+
+        .toc-link:hover {
+            opacity: 0.8;
+        }
+
+        .toc-date {
+            display: inline;
+            font-family: var(--font-sans);
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            font-weight: 400;
+        }
+
+        .toc-date::before {
+            content: "·";
+            display: inline-block;
+            padding: 0 0.5em;
+            font-weight: 700;
+            color: var(--text-muted);
+            opacity: 0.6;
+        }
+
+        .toc-blurb {
+            font-size: 1.05rem;
+            line-height: 1.5;
+            color: var(--text-main);
+            margin-top: 0.1em;
+        }
+
+        /* Article Typography & Formatting */
+        .article-date {
+            font-family: var(--font-sans);
+            font-size: 0.9rem;
+            letter-spacing: 0.04em;
+            color: var(--text-muted);
+            margin-top: -1.25em;
+            margin-bottom: 2em;
+            font-weight: 500;
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+            color: var(--text-main);
+            font-weight: 700;
+            line-height: 1.25;
+            margin-top: 2.25em;
+            margin-bottom: 0.75em;
+            letter-spacing: -0.01em;
+        }
+
         h1 { font-size: 2.35rem; margin-top: 0; }
-        p, ul, ol, blockquote, pre { margin-bottom: 1.6em; }
-        a { color: var(--link-color); text-decoration: none; }
-        blockquote { border-left: 3px solid var(--text-muted); padding-left: 1.25rem; color: var(--text-muted); font-style: italic; }
-        code { font-family: monospace; font-size: 0.875em; background-color: var(--code-bg); padding: 0.2em 0.4em; border-radius: 4px; }
-        pre { background-color: var(--code-bg); padding: 1rem; overflow-x: auto; border-radius: 6px; border: 1px solid var(--border-color); }
-        pre code { background-color: transparent; padding: 0; }
-        
-        .status-msg { color: var(--text-muted); font-size: 1rem; text-align: center; font-family: var(--font-sans); margin-top: 4rem; }
+        h2 { font-size: 1.7rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.3em; }
+        h3 { font-size: 1.4rem; }
+        h4 { font-size: 1.2rem; }
+
+        p, ul, ol, blockquote, table, pre {
+            margin-bottom: 1.6em;
+        }
+
+        a {
+            color: var(--link-color);
+            text-decoration: none;
+            transition: opacity 0.15s ease;
+        }
+
+        a:hover {
+            opacity: 0.8;
+        }
+
+        ul, ol { padding-left: 1.5rem; }
+        li { margin-bottom: 0.4em; }
+
+        blockquote {
+            border-left: 3px solid var(--text-muted);
+            padding-left: 1.25rem;
+            color: var(--text-muted);
+            font-style: italic;
+        }
+
+        code {
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+            font-size: 0.875em;
+            background-color: var(--code-bg);
+            padding: 0.2em 0.4em;
+            border-radius: 4px;
+        }
+
+        pre {
+            background-color: var(--code-bg);
+            padding: 1rem;
+            overflow-x: auto;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+        }
+
+        pre code {
+            background-color: transparent;
+            padding: 0;
+            border-radius: 0;
+        }
+
+        hr {
+            border: 0;
+            height: 1px;
+            background: var(--border-color);
+            margin: 2.5em 0;
+        }
+
+        .status-msg {
+            color: var(--text-muted);
+            font-size: 1rem;
+            text-align: center;
+            font-family: var(--font-sans);
+            margin-top: 4rem;
+        }
     </style>
 </head>
 <body>
@@ -102,26 +236,24 @@
     <script>
         document.addEventListener("DOMContentLoaded", () => {
             const content = document.getElementById("content");
-            const file = new URLSearchParams(window.location.search).get("file");
+            const fileParam = new URLSearchParams(window.location.search).get("file");
 
-            file ? loadArticle(file) : loadIndex();
+            fileParam ? loadArticle(fileParam) : loadIndex();
 
             function loadIndex() {
                 fetch("index.json")
                     .then(r => r.ok ? r.json() : Promise.reject(r.status))
                     .then(items => {
                         let html = `
-                            <div class="nav-slot"></div>
-                            <div>
+                            <div class="toc-container">
                                 <h1 class="toc-title">Longform</h1>
-                                <p class="toc-intro">Welcome! You'll find all my published essays gathered below. Some skew a bit more technical, while others offer broader reflections for a general audience. Whatever brought you here, I hope you discover something that sparks your interest. If nothing clicks today, drop by again later to see what's new.</p>
+                                <p class="toc-intro">Welcome. Below is the full collection of essays—ranging from technical deep-dives to broader personal reflections. My hope is that you find something here that catches your eye. If not, feel free to check back later to see what's new.</p>
                                 <ul class="toc-list">`;
                         
                         items.forEach(i => {
                             html += `
                                 <li class="toc-item">
-                                    <a class="toc-link" href="?file=${encodeURIComponent(i.file)}">${i.title}</a>
-                                    ${i.date ? `<span class="toc-date">${i.date}</span>` : ''}
+                                    <a class="toc-link" href="?file=${encodeURIComponent(i.file)}">${i.title}</a>${i.date ? `<span class="toc-date">${i.date}</span>` : ''}
                                     ${i.blurb ? `<div class="toc-blurb">${i.blurb}</div>` : ''}
                                 </li>`;
                         });
@@ -138,7 +270,7 @@
                     fetch("index.json").then(r => r.ok ? r.json() : []).catch(() => [])
                 ])
                 .then(([rawText, indexItems]) => {
-                    // Strip front matter if present
+                    // Strip top YAML front matter if present in .md
                     const bodyText = rawText.trim().startsWith('---') ? rawText.split(/^---$/m).slice(2).join('---').trim() : rawText;
                     const meta = indexItems.find(i => i.file === cleanPath) || {};
                     const title = meta.title || cleanPath.replace(/\.md$/i, "").replace(/[-_]/g, " ");
@@ -150,7 +282,7 @@
                         : `<h1>${title}</h1>${dateHtml}${parsedHtml}`;
 
                     content.innerHTML = `
-                        <div class="nav-slot"><a href="?">&larr; Back to Library</a></div>
+                        <nav class="nav-header"><a href="?">&larr; Back to Library</a></nav>
                         <div>${parsedHtml}</div>
                         <nav class="nav-footer"><a href="?">&larr; Back to Library</a></nav>`;
                 })
