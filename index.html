@@ -4,33 +4,27 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Markdown Reader</title>
-    <!-- Google Fonts for modern screen serif & clean sans UI -->
+    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400..700;1,8..60,400..700&display=swap" rel="stylesheet">
     <!-- Marked.js for Markdown parsing -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <!-- js-yaml for parsing Front Matter metadata -->
-    <script src="https://cdn.jsdelivr.net/npm/js-yaml/dist/js-yaml.min.js"></script>
     <style>
         :root {
-            --bg-color: #fdf6e3;       /* Warm cream / off-white background */
-            --text-main: #2b303a;      /* Deep soft slate/charcoal */
-            --text-muted: #657b83;     /* Muted slate for metadata & subtitles */
-            --border-color: #e0d7c6;   /* Soft warm grey border */
-            --code-bg: #f5eedc;        /* Tinted cream background for code blocks */
-            --link-color: #268bd2;     /* Muted reading-friendly blue */
+            --bg-color: #fdf6e3;
+            --text-main: #2b303a;
+            --text-muted: #657b83;
+            --border-color: #e0d7c6;
+            --code-bg: #f5eedc;
+            --link-color: #268bd2;
             --max-width: 680px;
             --font-serif: "Source Serif 4", Charter, Georgia, serif;
             --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
         body {
             background-color: var(--bg-color);
             color: var(--text-main);
@@ -45,189 +39,33 @@
             align-items: center;
         }
 
-        #content {
-            width: 100%;
-            max-width: var(--max-width);
-        }
-
-        /* Navigation Slots */
-        .nav-slot {
-            font-family: var(--font-sans);
-            font-size: 0.875rem;
-            min-height: 1.5rem;
-            margin-bottom: 2.5rem;
-        }
-
-        .nav-footer {
-            font-family: var(--font-sans);
-            font-size: 0.875rem;
-            margin-top: 4rem;
-            padding-top: 2rem;
-            border-top: 1px solid var(--border-color);
-        }
-
-        .nav-slot a, .nav-footer a {
-            color: var(--text-muted);
-            text-decoration: none;
-            transition: color 0.15s ease;
-        }
-
-        .nav-slot a:hover, .nav-footer a:hover {
-            color: var(--text-main);
-        }
-
-        /* Shared Container for TOC and Articles */
-        .page-container {
-            font-family: var(--font-serif);
-        }
-
-        .toc-title {
-            font-size: 2.35rem;
-            font-weight: 700;
-            margin-top: 0;
-            margin-bottom: 0.75em;
-            color: var(--text-main);
-            line-height: 1.25;
-            letter-spacing: -0.01em;
-        }
-
-        .toc-intro {
-            font-size: 1.2rem;
-            line-height: 1.75;
-            color: var(--text-main);
-            margin-bottom: 2.5em;
-        }
-
-        .toc-list {
-            list-style-type: disc;
-            padding-left: 1.5rem;
-            margin-bottom: 1.6em;
-        }
-
-        .toc-item {
-            margin-bottom: 1.75em;
-        }
-
-        .toc-link {
-            font-size: 1.25rem;
-            font-weight: 600;
-            color: var(--link-color);
-            text-decoration: none;
-            transition: opacity 0.15s ease;
-        }
-
-        .toc-link:hover {
-            opacity: 0.8;
-        }
-
-        /* Subtle typographic separator dot before the date */
-        .toc-date {
-            font-family: var(--font-sans);
-            font-size: 0.85rem;
-            color: var(--text-muted);
-            margin-left: 0.6rem;
-            letter-spacing: 0.02em;
-            font-weight: 400;
-        }
-
-        .toc-date::before {
-            content: "·";
-            margin-right: 0.6rem;
-            font-weight: 700;
-            color: var(--text-muted);
-            opacity: 0.6;
-        }
-
-        /* Blurb aligned tighter to the post heading */
-        .toc-blurb {
-            font-size: 1.05rem;
-            line-height: 1.5;
-            color: var(--text-main);
-            margin-top: 0.1em;
-        }
-
-        /* Article Typography & Formatting */
-        .article-date {
-            font-family: var(--font-sans);
-            font-size: 0.9rem;
-            letter-spacing: 0.04em;
-            color: var(--text-muted);
-            margin-top: -1.25em;
-            margin-bottom: 2em;
-            font-weight: 500;
-        }
-
-        h1, h2, h3, h4, h5, h6 {
-            color: var(--text-main);
-            font-weight: 700;
-            line-height: 1.25;
-            margin-top: 2.25em;
-            margin-bottom: 0.75em;
-            letter-spacing: -0.01em;
-        }
-
+        #content { width: 100%; max-width: var(--max-width); }
+        
+        .nav-slot { font-family: var(--font-sans); font-size: 0.875rem; min-height: 1.5rem; margin-bottom: 2.5rem; }
+        .nav-footer { font-family: var(--font-sans); font-size: 0.875rem; margin-top: 4rem; padding-top: 2rem; border-top: 1px solid var(--border-color); }
+        .nav-slot a, .nav-footer a { color: var(--text-muted); text-decoration: none; }
+        
+        .toc-title { font-size: 2.35rem; font-weight: 700; margin-bottom: 0.75em; }
+        .toc-intro { font-size: 1.2rem; margin-bottom: 2.5em; }
+        .toc-list { list-style-type: disc; padding-left: 1.5rem; }
+        .toc-item { margin-bottom: 1.75em; }
+        .toc-link { font-size: 1.25rem; font-weight: 600; color: var(--link-color); text-decoration: none; }
+        .toc-date { font-family: var(--font-sans); font-size: 0.85rem; color: var(--text-muted); margin-left: 0.6rem; }
+        .toc-date::before { content: "·"; margin-right: 0.6rem; font-weight: 700; opacity: 0.6; }
+        .toc-blurb { font-size: 1.05rem; line-height: 1.5; margin-top: 0.1em; }
+        
+        .article-date { font-family: var(--font-sans); font-size: 0.9rem; color: var(--text-muted); margin-top: -1.25em; margin-bottom: 2em; }
+        
+        h1, h2, h3 { color: var(--text-main); font-weight: 700; margin-top: 2.25em; margin-bottom: 0.75em; }
         h1 { font-size: 2.35rem; margin-top: 0; }
-        h2 { font-size: 1.7rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.3em; }
-        h3 { font-size: 1.4rem; }
-        h4 { font-size: 1.2rem; }
-
-        p, ul, ol, blockquote, table, pre {
-            margin-bottom: 1.6em;
-        }
-
-        a {
-            color: var(--link-color);
-            text-decoration: none;
-            transition: opacity 0.15s ease;
-        }
-
-        a:hover { opacity: 0.8; }
-        ul, ol { padding-left: 1.5rem; }
-        li { margin-bottom: 0.4em; }
-
-        blockquote {
-            border-left: 3px solid var(--text-muted);
-            padding-left: 1.25rem;
-            color: var(--text-muted);
-            font-style: italic;
-        }
-
-        code {
-            font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
-            font-size: 0.875em;
-            background-color: var(--code-bg);
-            padding: 0.2em 0.4em;
-            border-radius: 4px;
-        }
-
-        pre {
-            background-color: var(--code-bg);
-            padding: 1rem;
-            overflow-x: auto;
-            border-radius: 6px;
-            border: 1px solid var(--border-color);
-        }
-
-        pre code {
-            background-color: transparent;
-            padding: 0;
-            border-radius: 0;
-        }
-
-        hr {
-            border: 0;
-            height: 1px;
-            background: var(--border-color);
-            margin: 2.5em 0;
-        }
-
-        .status-msg {
-            color: var(--text-muted);
-            font-size: 1rem;
-            text-align: center;
-            font-family: var(--font-sans);
-            margin-top: 4rem;
-        }
+        p, ul, ol, blockquote, pre { margin-bottom: 1.6em; }
+        a { color: var(--link-color); text-decoration: none; }
+        blockquote { border-left: 3px solid var(--text-muted); padding-left: 1.25rem; color: var(--text-muted); font-style: italic; }
+        code { font-family: monospace; font-size: 0.875em; background-color: var(--code-bg); padding: 0.2em 0.4em; border-radius: 4px; }
+        pre { background-color: var(--code-bg); padding: 1rem; overflow-x: auto; border-radius: 6px; border: 1px solid var(--border-color); }
+        pre code { background-color: transparent; padding: 0; }
+        
+        .status-msg { color: var(--text-muted); font-size: 1rem; text-align: center; font-family: var(--font-sans); margin-top: 4rem; }
     </style>
 </head>
 <body>
@@ -237,114 +75,39 @@
     <script>
         document.addEventListener("DOMContentLoaded", () => {
             const contentDiv = document.getElementById("content");
-            const urlParams = new URLSearchParams(window.location.search);
-            const mdUrl = urlParams.get("file");
+            const fileParam = new URLSearchParams(window.location.search).get("file");
 
-            // Formats dates strictly as "25 Aug 2026"
-            const formatDate = (dateObj) => {
-                const day = dateObj.getDate();
-                const month = dateObj.toLocaleString('en-GB', { month: 'short' });
-                const year = dateObj.getFullYear();
-                return `${day} ${month} ${year}`;
-            };
-
-            // Separates YAML front matter from markdown body
-            function parseFrontMatter(rawText) {
-                let metadata = {};
-                let markdown = rawText;
-
-                if (rawText && rawText.trim().startsWith('---')) {
-                    const parts = rawText.split(/^---$/m);
-                    if (parts.length >= 3) {
-                        try {
-                            metadata = jsyaml.load(parts[1]) || {};
-                            markdown = parts.slice(2).join('---').trim();
-                        } catch (e) {
-                            console.error("YAML parsing error:", e);
-                        }
-                    }
-                }
-                return { metadata, markdown };
-            }
-
-            if (mdUrl) {
-                loadArticle(mdUrl);
+            if (fileParam) {
+                loadArticle(fileParam);
             } else {
-                scanRepository();
+                loadIndex();
             }
 
-            // Uses GitHub REST API to list all .md files in repository root
-            function scanRepository() {
-                fetch("https://api.github.com/repos/vilshansen/longform/contents/")
+            function loadIndex() {
+                fetch("./index.json")
                     .then(res => {
-                        if (!res.ok) throw new Error(`GitHub API HTTP ${res.status}`);
+                        if (!res.ok) throw new Error(`HTTP ${res.status}`);
                         return res.json();
                     })
-                    .then(data => {
-                        const fileObjects = data.filter(item => 
-                            item.type === "file" && 
-                            item.name.endsWith(".md") && 
-                            item.name.toLowerCase() !== "readme.md"
-                        );
-
-                        if (fileObjects.length > 0) {
-                            fetchPostMetadata(fileObjects);
-                        } else {
-                            renderErrorState("No .md files found in repository root.");
-                        }
-                    })
-                    .catch(err => renderErrorState(`Unable to fetch repository listing: ${err.message}`));
-            }
-
-            async function fetchPostMetadata(fileObjects) {
-                const items = await Promise.all(fileObjects.map(async (item) => {
-                    const fileName = item.name;
-                    let title = fileName.replace(/\.md$/i, "").replace(/[-_]/g, " ").replace(/\b\w/g, c => c.toUpperCase());
-                    let blurb = null;
-                    let dateStr = null;
-
-                    try {
-                        // Fetch direct raw content URL
-                        const fetchTarget = item.download_url || `./${fileName}`;
-                        const res = await fetch(fetchTarget);
-                        const text = await res.text();
-                        const { metadata } = parseFrontMatter(text);
-
-                        if (metadata.title) title = metadata.title;
-                        if (metadata.blurb) blurb = metadata.blurb;
-                        
-                        if (metadata.date) {
-                            const parsedDate = new Date(metadata.date);
-                            dateStr = !isNaN(parsedDate) ? formatDate(parsedDate) : metadata.date;
-                        } else {
-                            const lastMod = res.headers.get("Last-Modified");
-                            if (lastMod) dateStr = formatDate(new Date(lastMod));
-                        }
-                    } catch (e) {
-                        console.error("Error fetching metadata for", fileName, e);
-                    }
-
-                    return { file: fileName, title, blurb, dateStr };
-                }));
-
-                renderTOC(items);
+                    .then(items => renderTOC(items))
+                    .catch(err => renderError(`Unable to load index.json: ${err.message}`));
             }
 
             function renderTOC(items) {
                 let html = `
                     <div class="nav-slot"></div>
-                    <div class="page-container">
+                    <div>
                         <h1 class="toc-title">Document Library</h1>
-                        <p class="toc-intro">Welcome to the reader. Below is the full collection of available essays and system notes currently registered in the repository:</p>
+                        <p class="toc-intro">Welcome to the reader. Below is the full collection of available essays and system notes:</p>
                         <ul class="toc-list">`;
 
-                items.forEach(({ file, title, blurb, dateStr }) => {
-                    const dateDisplay = dateStr ? `<span class="toc-date">${dateStr}</span>` : '';
-                    const blurbDisplay = blurb ? `<div class="toc-blurb">${blurb}</div>` : '';
+                items.forEach(item => {
+                    const dateDisplay = item.date ? `<span class="toc-date">${item.date}</span>` : '';
+                    const blurbDisplay = item.blurb ? `<div class="toc-blurb">${item.blurb}</div>` : '';
 
                     html += `
                         <li class="toc-item">
-                            <a class="toc-link" href="?file=${encodeURIComponent(file)}">${title}</a>
+                            <a class="toc-link" href="?file=${encodeURIComponent(item.file)}">${item.title}</a>
                             ${dateDisplay}
                             ${blurbDisplay}
                         </li>`;
@@ -355,55 +118,46 @@
             }
 
             function loadArticle(filename) {
-                // Ensure target relative fetch path remains clean relative to the current subpath
-                const relativePath = `./${filename.replace(/^\.\//, '')}`;
-                
-                fetch(relativePath)
-                    .then(response => {
-                        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                        const lastModified = response.headers.get("Last-Modified");
-                        return response.text().then(rawText => ({ rawText, lastModified }));
+                fetch(`./${filename}`)
+                    .then(res => {
+                        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                        return res.text();
                     })
-                    .then(({ rawText, lastModified }) => {
-                        const { metadata, markdown } = parseFrontMatter(rawText);
-                        let parsedHtml = marked.parse(markdown);
-
-                        let finalDate = null;
-                        if (metadata.date) {
-                            const parsedDate = new Date(metadata.date);
-                            finalDate = !isNaN(parsedDate) ? formatDate(parsedDate) : metadata.date;
-                        } else if (lastModified) {
-                            finalDate = formatDate(new Date(lastModified));
-                        } else {
-                            finalDate = formatDate(new Date());
-                        }
-
-                        const fallbackTitle = filename.replace(/\.md$/i, "").replace(/[-_]/g, " ").replace(/\b\w/g, c => c.toUpperCase());
-                        const titleText = metadata.title || fallbackTitle;
-
-                        const dateHtml = `<div class="article-date">${finalDate}</div>`;
-                        const navHeaderHtml = `<div class="nav-slot"><a href="?">&larr; Back to Library</a></div>`;
-                        const navFooterHtml = `<nav class="nav-footer"><a href="?">&larr; Back to Library</a></nav>`;
-
-                        if (/<h1[^>]*>/i.test(parsedHtml)) {
-                            parsedHtml = parsedHtml.replace(/<\/h1>/i, '$&' + dateHtml);
-                        } else {
-                            const constructedHeader = `<h1>${titleText}</h1>` + dateHtml;
-                            parsedHtml = constructedHeader + parsedHtml;
-                        }
-
-                        contentDiv.innerHTML = navHeaderHtml + `<div class="page-container">${parsedHtml}</div>` + navFooterHtml;
+                    .then(markdownText => {
+                        // Find matching metadata from index.json for header injection
+                        fetch("./index.json")
+                            .then(res => res.ok ? res.json() : [])
+                            .then(indexItems => {
+                                const entry = indexItems.find(i => i.file === filename) || {};
+                                renderArticle(markdownText, filename, entry.title, entry.date);
+                            })
+                            .catch(() => {
+                                renderArticle(markdownText, filename);
+                            });
                     })
-                    .catch(error => {
-                        renderErrorState(`Unable to load '${filename}': ${error.message}`);
-                    });
+                    .catch(err => renderError(`Unable to load '${filename}': ${err.message}`));
             }
 
-            function renderErrorState(message) {
+            function renderArticle(markdownText, filename, indexTitle, indexDate) {
+                let parsedHtml = marked.parse(markdownText);
+                const fallbackTitle = filename.replace(/\.md$/i, "").replace(/[-_]/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+                const titleText = indexTitle || fallbackTitle;
+                const dateHtml = indexDate ? `<div class="article-date">${indexDate}</div>` : '';
+
+                if (/<h1[^>]*>/i.test(parsedHtml)) {
+                    if (dateHtml) parsedHtml = parsedHtml.replace(/<\/h1>/i, '$&' + dateHtml);
+                } else {
+                    parsedHtml = `<h1>${titleText}</h1>` + dateHtml + parsedHtml;
+                }
+
                 contentDiv.innerHTML = `
-                    <div class="status-msg">
-                        <p>${message}</p>
-                    </div>`;
+                    <div class="nav-slot"><a href="?">&larr; Back to Library</a></div>
+                    <div>${parsedHtml}</div>
+                    <nav class="nav-footer"><a href="?">&larr; Back to Library</a></nav>`;
+            }
+
+            function renderError(msg) {
+                contentDiv.innerHTML = `<div class="status-msg"><p>${msg}</p></div>`;
             }
         });
     </script>

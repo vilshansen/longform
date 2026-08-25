@@ -1,0 +1,26 @@
+[
+  {
+    "file": "architecture-notes.md",
+    "title": "Notes on Modular System Design",
+    "blurb": "A practical exploration of dependency injection and defensive perimeter security.",
+    "date": "25 Aug 2026"
+  },
+  {
+    "file": "how-content-discovery-works.md",
+    "title": "How Automatic Content Discovery Works",
+    "blurb": "An inside look at static directory indexing and client-side front matter parsing.",
+    "date": "25 Aug 2026"
+  },
+  {
+    "file": "silent-cities.md",
+    "title": "The Architecture of Silent Cities",
+    "blurb": "How ancient plateaus and volcanic concrete inspired an architectural philosophy prioritizing acoustic economy.",
+    "date": "18 Aug 2026"
+  },
+  {
+    "file": "getting-started.md",
+    "title": "Getting Started with the Library",
+    "blurb": "A quick-start guide to writing Markdown posts and deploying changes with Git.",
+    "date": "12 Aug 2026"
+  }
+]
