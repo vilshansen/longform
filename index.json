@@ -1,5 +1,11 @@
 [
-{
+  {
+    "file": "the-cold-edge-of-trotternish.md",
+    "title": "The Cold Edge of Trotternish",
+    "blurb": "When a rusted leather trunk is discovered on a treacherous cliff ledge beneath the Quiraing, DCI Ewan MacLeod is called to Skye's storm-battered coast. With no skid marks, no witnesses, and a cracked pocket watch frozen at 3:14, he must unravel a murder buried deep within the island's fog and silence.",
+    "date": "25 Aug 2026"
+  },
+  {
     "file": "how-this-site-is-built.md",
     "title": "How This Site Is Built",
     "blurb": "An architectural breakdown of a zero-build, static Markdown document library running on GitHub Pages.",
