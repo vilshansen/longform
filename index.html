@@ -253,7 +253,7 @@
                 let metadata = {};
                 let markdown = rawText;
 
-                if (rawText.startsWith('---')) {
+                if (rawText && rawText.trim().startsWith('---')) {
                     const parts = rawText.split(/^---$/m);
                     if (parts.length >= 3) {
                         try {
@@ -273,7 +273,7 @@
                 scanRepository();
             }
 
-            // Uses GitHub REST API to list all .md files in the repository root
+            // Uses GitHub REST API to list all .md files in repository root
             function scanRepository() {
                 fetch("https://api.github.com/repos/vilshansen/longform/contents/")
                     .then(res => {
@@ -281,12 +281,14 @@
                         return res.json();
                     })
                     .then(data => {
-                        const files = data
-                            .filter(item => item.type === "file" && item.name.endsWith(".md") && item.name.toLowerCase() !== "readme.md")
-                            .map(item => item.name);
+                        const fileObjects = data.filter(item => 
+                            item.type === "file" && 
+                            item.name.endsWith(".md") && 
+                            item.name.toLowerCase() !== "readme.md"
+                        );
 
-                        if (files.length > 0) {
-                            fetchPostMetadata(files);
+                        if (fileObjects.length > 0) {
+                            fetchPostMetadata(fileObjects);
                         } else {
                             renderErrorState("No .md files found in repository root.");
                         }
@@ -294,14 +296,16 @@
                     .catch(err => renderErrorState(`Unable to fetch repository listing: ${err.message}`));
             }
 
-            async function fetchPostMetadata(files) {
-                const items = await Promise.all(files.map(async (file) => {
-                    let title = file.replace(/\.md$/i, "").replace(/[-_]/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+            async function fetchPostMetadata(fileObjects) {
+                const items = await Promise.all(fileObjects.map(async (item) => {
+                    const fileName = item.name;
+                    let title = fileName.replace(/\.md$/i, "").replace(/[-_]/g, " ").replace(/\b\w/g, c => c.toUpperCase());
                     let blurb = null;
                     let dateStr = null;
 
                     try {
-                        const res = await fetch(file);
+                        // Fetch direct raw file content using GitHub's direct URL
+                        const res = await fetch(item.download_url || fileName);
                         const text = await res.text();
                         const { metadata } = parseFrontMatter(text);
 
@@ -315,9 +319,11 @@
                             const lastMod = res.headers.get("Last-Modified");
                             if (lastMod) dateStr = formatDate(new Date(lastMod));
                         }
-                    } catch (e) {}
+                    } catch (e) {
+                        console.error("Error fetching metadata for", fileName, e);
+                    }
 
-                    return { file, title, blurb, dateStr };
+                    return { file: fileName, title, blurb, dateStr };
                 }));
 
                 renderTOC(items);
@@ -368,7 +374,6 @@
                             finalDate = formatDate(new Date());
                         }
 
-                        // Determine title: use metadata.title, or fallback to file name formatted nicely
                         const fallbackTitle = url.replace(/\.md$/i, "").replace(/[-_]/g, " ").replace(/\b\w/g, c => c.toUpperCase());
                         const titleText = metadata.title || fallbackTitle;
 
@@ -376,11 +381,9 @@
                         const navHeaderHtml = `<div class="nav-slot"><a href="?">&larr; Back to Library</a></div>`;
                         const navFooterHtml = `<nav class="nav-footer"><a href="?">&larr; Back to Library</a></nav>`;
 
-                        // If the parsed markdown already contains an H1 tag, insert the date right after it
                         if (/<h1[^>]*>/i.test(parsedHtml)) {
                             parsedHtml = parsedHtml.replace(/<\/h1>/i, '$&' + dateHtml);
                         } else {
-                            // Otherwise, construct the H1 from front matter title + append dateHtml
                             const constructedHeader = `<h1>${titleText}</h1>` + dateHtml;
                             parsedHtml = constructedHeader + parsedHtml;
                         }
