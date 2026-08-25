@@ -304,8 +304,9 @@
                     let dateStr = null;
 
                     try {
-                        // Fetch direct raw file content using GitHub's direct URL
-                        const res = await fetch(item.download_url || fileName);
+                        // Fetch direct raw content URL
+                        const fetchTarget = item.download_url || `./${fileName}`;
+                        const res = await fetch(fetchTarget);
                         const text = await res.text();
                         const { metadata } = parseFrontMatter(text);
 
@@ -353,10 +354,13 @@
                 contentDiv.innerHTML = html;
             }
 
-            function loadArticle(url) {
-                fetch(url)
+            function loadArticle(filename) {
+                // Ensure target relative fetch path remains clean relative to the current subpath
+                const relativePath = `./${filename.replace(/^\.\//, '')}`;
+                
+                fetch(relativePath)
                     .then(response => {
-                        if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                        if (!response.ok) throw new Error(`HTTP ${response.status}`);
                         const lastModified = response.headers.get("Last-Modified");
                         return response.text().then(rawText => ({ rawText, lastModified }));
                     })
@@ -374,7 +378,7 @@
                             finalDate = formatDate(new Date());
                         }
 
-                        const fallbackTitle = url.replace(/\.md$/i, "").replace(/[-_]/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+                        const fallbackTitle = filename.replace(/\.md$/i, "").replace(/[-_]/g, " ").replace(/\b\w/g, c => c.toUpperCase());
                         const titleText = metadata.title || fallbackTitle;
 
                         const dateHtml = `<div class="article-date">${finalDate}</div>`;
@@ -391,7 +395,7 @@
                         contentDiv.innerHTML = navHeaderHtml + `<div class="page-container">${parsedHtml}</div>` + navFooterHtml;
                     })
                     .catch(error => {
-                        renderErrorState(`Unable to load '${url}': ${error.message}`);
+                        renderErrorState(`Unable to load '${filename}': ${error.message}`);
                     });
             }
 
