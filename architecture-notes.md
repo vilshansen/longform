@@ -1,9 +1,18 @@
-# Notes on Modular System Design
+---
+title: Notes on Modular System Design
+blurb: A practical exploration of dependency injection, domain boundary isolation, and defensive perimeter security in high-throughput services.
+date: 25 Aug 2026
+---
 
-Modern software systems demand a clear boundary between domain logic and infrastructural concerns. When building high-throughput services, maintaining strict decopuling ensures that underlying data stores or transport protocols can be swapped without mutating core business rules.
+Modern software systems demand a clear boundary between domain logic and infrastructural concerns. When building high-throughput services, maintaining strict decoupling ensures that underlying data stores or transport protocols can be swapped without mutating core business rules.
 
-## Core Architectural Principles
+## Core Isolation Principles
 
-1. **Explicit Dependencies:** Components must never implicitly reach for external state or global singletons. Pass interfaces down through constructor injection.
-2. **Boundary Isolation:** Keep external schemas at the edge. Map incoming payload DTOs into internal domain entities immediately upon entering the application layer.
-3. **Immutability by Default:** Prefer state transitions that return new structures rather than mutating shared memory in place.
+1. **Explicit Boundaries**: Dependencies must always flow inward toward core domain models.
+2. **Interface Abstraction**: High-level modules should never depend directly on low-level drivers.
+3. **Defensive Perimeters**: Input data sanitization and cryptographic validation belong strictly at the edge ingress layer.
+
+```go
+type SecurityProvider interface {
+    ValidatePayload(data []byte) (bool, error)
+}
