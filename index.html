@@ -84,7 +84,7 @@
             }
 
             function loadIndex() {
-                fetch("./index.json")
+                fetch("index.json")
                     .then(res => {
                         if (!res.ok) throw new Error(`HTTP ${res.status}`);
                         return res.json();
@@ -118,24 +118,26 @@
             }
 
             function loadArticle(filename) {
-                fetch(`./${filename}`)
+                // Strips leading slashes or dots to maintain relative subpath fetching
+                const cleanPath = filename.replace(/^(\.\/|\/)+/, '');
+                
+                fetch(cleanPath)
                     .then(res => {
                         if (!res.ok) throw new Error(`HTTP ${res.status}`);
                         return res.text();
                     })
                     .then(markdownText => {
-                        // Find matching metadata from index.json for header injection
-                        fetch("./index.json")
+                        fetch("index.json")
                             .then(res => res.ok ? res.json() : [])
                             .then(indexItems => {
-                                const entry = indexItems.find(i => i.file === filename) || {};
-                                renderArticle(markdownText, filename, entry.title, entry.date);
+                                const entry = indexItems.find(i => i.file === cleanPath) || {};
+                                renderArticle(markdownText, cleanPath, entry.title, entry.date);
                             })
                             .catch(() => {
-                                renderArticle(markdownText, filename);
+                                renderArticle(markdownText, cleanPath);
                             });
                     })
-                    .catch(err => renderError(`Unable to load '${filename}': ${err.message}`));
+                    .catch(err => renderError(`Unable to load '${cleanPath}': ${err.message}`));
             }
 
             function renderArticle(markdownText, filename, indexTitle, indexDate) {
