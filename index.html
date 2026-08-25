@@ -62,8 +62,22 @@
     margin-bottom: 2.25em;  /* Slightly increased spacing between entries */
 }
         .toc-link { font-size: 1.25rem; font-weight: 600; color: var(--link-color); text-decoration: none; }
-        .toc-date { font-family: var(--font-sans); font-size: 0.85rem; color: var(--text-muted); margin-left: 0.6rem; }
-        .toc-date::before { content: "·"; margin-right: 0.6rem; font-weight: 700; opacity: 0.6; }
+        /* Clean, perfectly centered separator dot */
+.toc-date {
+    font-family: var(--font-sans);
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    font-weight: 400;
+}
+
+.toc-date::before {
+    content: "·";
+    display: inline-block;
+    padding: 0 0.55rem; /* Equal spacing on both left and right sides */
+    font-weight: 700;
+    color: var(--text-muted);
+    opacity: 0.6;
+}
         .toc-blurb { font-size: 1.05rem; line-height: 1.5; margin-top: 0.1em; }
         
         .article-date { font-family: var(--font-sans); font-size: 0.9rem; color: var(--text-muted); margin-top: -1.25em; margin-bottom: 2em; }
