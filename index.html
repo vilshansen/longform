@@ -54,7 +54,10 @@
     color: var(--text-main);
 }
         .toc-intro { font-size: 1.2rem; margin-bottom: 2.5em; }
-        .toc-list { list-style-type: disc; padding-left: 1.5rem; }
+.toc-list { 
+    list-style-type: none;  /* Removes bullet points */
+    padding-left: 0;        /* Flushes links to the left margin */
+}
         .toc-item { margin-bottom: 1.75em; }
         .toc-link { font-size: 1.25rem; font-weight: 600; color: var(--link-color); text-decoration: none; }
         .toc-date { font-family: var(--font-sans); font-size: 0.85rem; color: var(--text-muted); margin-left: 0.6rem; }
