@@ -4,6 +4,7 @@ There are no Node.js dependencies, complex static site generators (like Hugo or 
 
 ## Architecture \& Data Flow
 
+```
 [ User Browser ]
 │
 ├─► Request root (/) ──► Fetches index.html + index.json
@@ -13,8 +14,7 @@ There are no Node.js dependencies, complex static site generators (like Hugo or 
 ├── Strips Front Matter
 ├── Parses Markdown via Marked.js
 └── Injects Title \& Metadata
-
-\---
+```
 
 ## Core Components
 
@@ -22,8 +22,6 @@ There are no Node.js dependencies, complex static site generators (like Hugo or 
 * **Vanilla Client-Side Engine (`index.html`)**: A single HTML file handling both view routing and dynamic rendering using standard JavaScript `fetch()` calls.
 * **Marked.js Engine**: Translates raw Markdown file text into clean HTML directly inside the user's browser runtime.
 * **Jekyll Bypass (`.nojekyll`)**: Disables GitHub Pages' default static builder, ensuring `.md` files and JSON resources are served as raw static assets without HTTP 404 filtering.
-
-\---
 
 ## The Technical Lifecycle
 
@@ -43,8 +41,6 @@ When a post link is selected (e.g., `?file=architecture-notes.md`):
 2. It executes a `Promise.all` request to fetch both the raw `.md` document and the metadata array from `index.json`.
 3. Path cleaning normalizes any leading slashes or relative notation (`./`) to prevent subpath routing errors on hosted domains.
 4. If an `<h1>` heading is absent from the Markdown body, the engine injects a top-level heading using the title defined in `index.json`.
-
-\---
 
 ## Key Benefits
 
