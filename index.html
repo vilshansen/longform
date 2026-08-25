@@ -138,11 +138,12 @@
             opacity: 0.6;
         }
 
+        /* Blurb aligned tighter to the post heading */
         .toc-blurb {
             font-size: 1.05rem;
-            line-height: 1.6;
+            line-height: 1.5;
             color: var(--text-main);
-            margin-top: 0.3em;
+            margin-top: 0.1em;
         }
 
         /* Article Typography & Formatting */
@@ -269,27 +270,28 @@
             if (mdUrl) {
                 loadArticle(mdUrl);
             } else {
-                scanDirectory();
+                scanRepository();
             }
 
-            // Scans directory for `.md` files dynamically
-            function scanDirectory() {
-                fetch(".")
-                    .then(res => res.text())
-                    .then(html => {
-                        const parser = new DOMParser();
-                        const doc = parser.parseFromString(html, "text/html");
-                        const links = Array.from(doc.querySelectorAll("a"))
-                            .map(a => a.getAttribute("href"))
-                            .filter(href => href && href.endsWith(".md") && !href.startsWith("."));
-                        
-                        if (links.length > 0) {
-                            fetchPostMetadata(links);
+            // Uses GitHub REST API to list all .md files in the repository root
+            function scanRepository() {
+                fetch("https://api.github.com/repos/vilshansen/longform/contents/")
+                    .then(res => {
+                        if (!res.ok) throw new Error(`GitHub API HTTP ${res.status}`);
+                        return res.json();
+                    })
+                    .then(data => {
+                        const files = data
+                            .filter(item => item.type === "file" && item.name.endsWith(".md") && item.name.toLowerCase() !== "readme.md")
+                            .map(item => item.name);
+
+                        if (files.length > 0) {
+                            fetchPostMetadata(files);
                         } else {
-                            renderErrorState("No .md files found in directory.");
+                            renderErrorState("No .md files found in repository root.");
                         }
                     })
-                    .catch(() => renderErrorState("Directory scanning not available on this server host."));
+                    .catch(err => renderErrorState(`Unable to fetch repository listing: ${err.message}`));
             }
 
             async function fetchPostMetadata(files) {
@@ -366,14 +368,21 @@
                             finalDate = formatDate(new Date());
                         }
 
+                        // Determine title: use metadata.title, or fallback to file name formatted nicely
+                        const fallbackTitle = url.replace(/\.md$/i, "").replace(/[-_]/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+                        const titleText = metadata.title || fallbackTitle;
+
                         const dateHtml = `<div class="article-date">${finalDate}</div>`;
                         const navHeaderHtml = `<div class="nav-slot"><a href="?">&larr; Back to Library</a></div>`;
                         const navFooterHtml = `<nav class="nav-footer"><a href="?">&larr; Back to Library</a></nav>`;
 
-                        if (/<h[1-6]>/i.test(parsedHtml)) {
-                            parsedHtml = parsedHtml.replace(/<\/h[1-6]>/i, '$&' + dateHtml);
+                        // If the parsed markdown already contains an H1 tag, insert the date right after it
+                        if (/<h1[^>]*>/i.test(parsedHtml)) {
+                            parsedHtml = parsedHtml.replace(/<\/h1>/i, '$&' + dateHtml);
                         } else {
-                            parsedHtml = dateHtml + parsedHtml;
+                            // Otherwise, construct the H1 from front matter title + append dateHtml
+                            const constructedHeader = `<h1>${titleText}</h1>` + dateHtml;
+                            parsedHtml = constructedHeader + parsedHtml;
                         }
 
                         contentDiv.innerHTML = navHeaderHtml + `<div class="page-container">${parsedHtml}</div>` + navFooterHtml;
