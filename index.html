@@ -304,9 +304,8 @@
                     let dateStr = null;
 
                     try {
-                        // Fetch direct raw content URL
-                        const fetchTarget = item.download_url || `./${fileName}`;
-                        const res = await fetch(fetchTarget);
+                        // Fetch raw file content using download_url
+                        const res = await fetch(item.download_url);
                         const text = await res.text();
                         const { metadata } = parseFrontMatter(text);
 
@@ -355,10 +354,10 @@
             }
 
             function loadArticle(filename) {
-                // Ensure target relative fetch path remains clean relative to the current subpath
-                const relativePath = `./${filename.replace(/^\.\//, '')}`;
+                // Fetch directly from raw GitHub user content to bypass static routing resolution issues
+                const rawUrl = `https://raw.githubusercontent.com/vilshansen/longform/main/${encodeURIComponent(filename)}`;
                 
-                fetch(relativePath)
+                fetch(rawUrl)
                     .then(response => {
                         if (!response.ok) throw new Error(`HTTP ${response.status}`);
                         const lastModified = response.headers.get("Last-Modified");
