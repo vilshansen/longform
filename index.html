@@ -64,6 +64,7 @@
         .toc-link { font-size: 1.25rem; font-weight: 600; color: var(--link-color); text-decoration: none; }
         /* Clean, perfectly centered separator dot */
 .toc-date {
+    display: inline;
     font-family: var(--font-sans);
     font-size: 0.85rem;
     color: var(--text-muted);
@@ -73,7 +74,7 @@
 .toc-date::before {
     content: "·";
     display: inline-block;
-    padding: 0 0.55rem; /* Equal spacing on both left and right sides */
+    padding: 0 0.5em; /* Perfectly balanced horizontal padding */
     font-weight: 700;
     color: var(--text-muted);
     opacity: 0.6;
