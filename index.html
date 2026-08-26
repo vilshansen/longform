@@ -3,13 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Longform — a collection of long-form essays and technical deep-dives.">
     <title>Longform</title>
     <!-- Google Fonts for Cormorant Garamond (Title) & Source Serif 4 (Body) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400..700;1,8..60,400..700&display=swap" rel="stylesheet">
-    <!-- Marked.js for parsing Markdown -->
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- Marked.js (Markdown parser) & DOMPurify (HTML sanitizer) — vendored locally so the site works offline -->
+    <script src="vendor/marked.min.js" defer></script>
+    <script src="vendor/purify.min.js" defer></script>
     <style>
         :root {
             --bg-color: #fdf6e3;       /* Warm cream / off-white background */
@@ -238,23 +240,64 @@
             const content = document.getElementById("content");
             const fileParam = new URLSearchParams(window.location.search).get("file");
 
-            fileParam ? loadArticle(fileParam) : loadIndex();
+            // ---- Small helpers ------------------------------------------------
+            // Escape text before interpolating it into innerHTML.
+            const esc = (s) => String(s ?? "")
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#39;");
 
+            // Cache index.json so it's only fetched once per page load.
+            let indexPromise = null;
+            const loadIndexJson = () => {
+                if (!indexPromise) {
+                    indexPromise = fetch("index.json")
+                        .then(r => r.ok ? r.json() : Promise.reject(r.status))
+                        .catch(err => { indexPromise = null; throw err; });
+                }
+                return indexPromise;
+            };
+
+            // Split optional YAML front matter from a Markdown document.
+            // Robust to a missing front-matter block or a '---' appearing later in the body.
+            function splitFrontMatter(rawText) {
+                const text = rawText.replace(/^\uFEFF/, ""); // strip BOM
+                if (!text.startsWith("---")) return { meta: {}, body: text };
+
+                const end = text.indexOf("\n---", 3);
+                if (end === -1) return { meta: {}, body: text };
+
+                const meta = {};
+                for (const line of text.slice(3, end).split(/\r?\n/)) {
+                    const m = line.match(/^([A-Za-z0-9_-]+)\s*:\s*(.*)$/);
+                    if (m) meta[m[1].toLowerCase()] = m[2].trim().replace(/^["']|["']$/g, "");
+                }
+                const body = text.slice(end + 4).replace(/^\r?\n/, "");
+                return { meta, body };
+            }
+
+            function renderError(msg) {
+                content.innerHTML = `<div class="status-msg" role="status"><p>${esc(msg)}</p></div>`;
+            }
+
+            // ---- Index / table of contents ------------------------------------
             function loadIndex() {
-                fetch("index.json")
-                    .then(r => r.ok ? r.json() : Promise.reject(r.status))
+                loadIndexJson()
                     .then(items => {
                         let html = `
                             <div class="toc-container">
                                 <h1 class="toc-title">Longform</h1>
                                 <p class="toc-intro">Welcome. Below is the full collection of essays, ranging from technical deep-dives to broader personal reflections. My hope is that you find something here that catches your eye. If not, feel free to check back later to see what's new.</p>
                                 <ul class="toc-list">`;
-                        
+
                         items.forEach(i => {
+                            const href = `?file=${encodeURIComponent(i.file)}`;
                             html += `
                                 <li class="toc-item">
-                                    <a class="toc-link" href="?file=${encodeURIComponent(i.file)}">${i.title}</a>${i.date ? `<span class="toc-date">${i.date}</span>` : ''}
-                                    ${i.blurb ? `<div class="toc-blurb">${i.blurb}</div>` : ''}
+                                    <a class="toc-link" href="${href}">${esc(i.title)}</a>${i.date ? `<span class="toc-date">${esc(i.date)}</span>` : ""}
+                                    ${i.blurb ? `<div class="toc-blurb">${esc(i.blurb)}</div>` : ""}
                                 </li>`;
                         });
                         content.innerHTML = html + `</ul></div>`;
@@ -262,36 +305,45 @@
                     .catch(err => renderError(`Unable to load index.json: HTTP ${err}`));
             }
 
+            // ---- Single article -------------------------------------------------
             function loadArticle(filename) {
-                const cleanPath = filename.replace(/^(\.\/|\/)+/, '');
-                
+                const cleanPath = filename.replace(/^(\.\/|\/)+/, "");
+
                 Promise.all([
                     fetch(cleanPath).then(r => r.ok ? r.text() : Promise.reject(r.status)),
-                    fetch("index.json").then(r => r.ok ? r.json() : []).catch(() => [])
+                    loadIndexJson().catch(() => [])
                 ])
                 .then(([rawText, indexItems]) => {
-                    // Strip top YAML front matter if present in .md
-                    const bodyText = rawText.trim().startsWith('---') ? rawText.split(/^---$/m).slice(2).join('---').trim() : rawText;
-                    const meta = indexItems.find(i => i.file === cleanPath) || {};
-                    const title = meta.title || cleanPath.replace(/\.md$/i, "").replace(/[-_]/g, " ");
-                    const dateHtml = meta.date ? `<div class="article-date">${meta.date}</div>` : '';
-                    
-                    let parsedHtml = marked.parse(bodyText);
-                    parsedHtml = /<h1[^>]*>/i.test(parsedHtml) 
-                        ? parsedHtml.replace(/<\/h1>/i, '$&' + dateHtml) 
-                        : `<h1>${title}</h1>${dateHtml}${parsedHtml}`;
+                    if (typeof marked === "undefined") {
+                        renderError("This page needs the Marked.js library to render, but it failed to load. Please reload.");
+                        return;
+                    }
+
+                    const { meta, body } = splitFrontMatter(rawText);
+                    const indexMeta = indexItems.find(i => i.file === cleanPath) || {};
+                    const title = indexMeta.title || meta.title || cleanPath.replace(/\.md$/i, "").replace(/[-_]/g, " ");
+                    const date = indexMeta.date || meta.date || "";
+                    const dateHtml = date ? `<div class="article-date">${esc(date)}</div>` : "";
+
+                    // Marked output is trusted only after DOMPurify strips scripts/event handlers.
+                    let parsedHtml = marked.parse(body);
+                    if (typeof DOMPurify !== "undefined") {
+                        parsedHtml = DOMPurify.sanitize(parsedHtml);
+                    }
+
+                    parsedHtml = /<h1[^>]*>/i.test(parsedHtml)
+                        ? parsedHtml.replace(/<\/h1>/i, "$&" + dateHtml)
+                        : `<h1>${esc(title)}</h1>${dateHtml}${parsedHtml}`;
 
                     content.innerHTML = `
-                        <nav class="nav-header"><a href="?">&larr; Back to Library</a></nav>
+                        <nav class="nav-header" aria-label="Article navigation"><a href="?">&larr; Back to Library</a></nav>
                         <div>${parsedHtml}</div>
-                        <nav class="nav-footer"><a href="?">&larr; Back to Library</a></nav>`;
+                        <nav class="nav-footer" aria-label="Footer navigation"><a href="?">&larr; Back to Library</a></nav>`;
                 })
                 .catch(err => renderError(`Unable to load '${cleanPath}': HTTP ${err}`));
             }
 
-            function renderError(msg) {
-                content.innerHTML = `<div class="status-msg"><p>${msg}</p></div>`;
-            }
+            fileParam ? loadArticle(fileParam) : loadIndex();
         });
     </script>
 </body>
