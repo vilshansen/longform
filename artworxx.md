@@ -12,5 +12,10 @@ It's simply something I made up.
 
 It has no meaning whatsoever.
 
+```
+This is supposed to be a fixed-width text box.
+Let's see how that looks.
+```
+
 Sorry.
 
