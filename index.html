@@ -374,7 +374,7 @@
             const REPO = "vilshansen/longform";
             const BRANCH = "main";
             const FILES_KEY = "longform.files";
-            const CACHE_TTL = 60 * 60 * 1000; // 1 hour
+            const CACHE_TTL = 10 * 60 * 1000; // 10 minutes — well within the 60 req/hr API limit
 
             function readFileCache() {
                 try {
@@ -388,7 +388,9 @@
             // Resolve to the sorted list of root .md filenames (cached).
             function listArticleFiles() {
                 const cached = readFileCache();
-                if (cached && Date.now() - cached.ts < CACHE_TTL) {
+                // ?refresh=1 bypasses the cache so a freshly-published post shows up immediately.
+                const force = new URLSearchParams(window.location.search).has("refresh");
+                if (!force && cached && Date.now() - cached.ts < CACHE_TTL) {
                     return Promise.resolve(cached.files);
                 }
                 return fetch(`https://api.github.com/repos/${REPO}/contents/?ref=${BRANCH}`)
