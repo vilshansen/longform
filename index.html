@@ -4,11 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Longform — a collection of long-form essays and technical deep-dives.">
+    <meta name="theme-color" content="#fdf6e3">
     <title>Longform</title>
-    <!-- Google Fonts for Cormorant Garamond (Title) & Source Serif 4 (Body) -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400..700;1,8..60,400..700&display=swap" rel="stylesheet">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23fdf6e3'/%3E%3Ctext x='32' y='45' font-family='Georgia,serif' font-size='42' font-weight='700' fill='%232b303a' text-anchor='middle'%3EL%3C/text%3E%3C/svg%3E">
+    <!-- Open Graph / social sharing -->
+    <meta property="og:site_name" content="Longform">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Longform">
+    <meta property="og:description" content="A collection of long-form essays and technical deep-dives.">
+    <meta property="og:url" content="/">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Longform">
+    <meta name="twitter:description" content="A collection of long-form essays and technical deep-dives.">
+    <!-- Cormorant Garamond (Title) & Source Serif 4 (Body) — self-hosted -->
+    <link rel="stylesheet" href="vendor/fonts.css">
     <!-- Marked.js (Markdown parser) & DOMPurify (HTML sanitizer) — vendored locally so the site works offline -->
     <script src="vendor/marked.min.js" defer></script>
     <script src="vendor/purify.min.js" defer></script>
@@ -26,6 +35,27 @@
             --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         }
 
+        /* Dark theme — manual override (data-theme) or system preference */
+        :root[data-theme="dark"] {
+            --bg-color: #171b21;
+            --text-main: #d7dde6;
+            --text-muted: #8a94a3;
+            --border-color: #323a46;
+            --code-bg: #1f252e;
+            --link-color: #6fb3e8;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root:not([data-theme="light"]) {
+                --bg-color: #171b21;
+                --text-main: #d7dde6;
+                --text-muted: #8a94a3;
+                --border-color: #323a46;
+                --code-bg: #1f252e;
+                --link-color: #6fb3e8;
+            }
+        }
+
         * {
             box-sizing: border-box;
             margin: 0;
@@ -38,6 +68,7 @@
             font-family: var(--font-serif);
             font-size: 1.2rem;
             line-height: 1.75;
+            transition: background-color 0.25s ease, color 0.25s ease;
             padding: 4rem 1.25rem 6rem 1.25rem;
             -webkit-font-smoothing: antialiased;
             min-height: 100vh;
@@ -145,7 +176,7 @@
         }
 
         /* Article Typography & Formatting */
-        .article-date {
+        .article-meta {
             font-family: var(--font-sans);
             font-size: 0.9rem;
             letter-spacing: 0.04em;
@@ -154,6 +185,65 @@
             margin-bottom: 2em;
             font-weight: 500;
         }
+
+        .article-meta .meta-sep {
+            padding: 0 0.5em;
+            opacity: 0.6;
+        }
+
+        .reading-time {
+            font-weight: 400;
+        }
+
+        /* Heading anchor links */
+        .heading-link {
+            opacity: 0;
+            margin-left: 0.3em;
+            font-size: 0.8em;
+            font-weight: 400;
+            color: var(--link-color);
+            text-decoration: none;
+            transition: opacity 0.15s ease;
+        }
+
+        h2:hover .heading-link,
+        h3:hover .heading-link,
+        h4:hover .heading-link,
+        h5:hover .heading-link {
+            opacity: 0.75;
+        }
+
+        /* Prev / Next article pager */
+        .article-pager {
+            display: flex;
+            justify-content: space-between;
+            gap: 1.5rem;
+            margin-top: 3rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border-color);
+            font-family: var(--font-sans);
+            font-size: 0.9rem;
+        }
+
+        .article-pager a {
+            color: var(--link-color);
+            text-decoration: none;
+            transition: opacity 0.15s ease;
+        }
+
+        .article-pager a:hover { opacity: 0.8; }
+
+        .article-pager .pager-label {
+            display: block;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-muted);
+            margin-bottom: 0.2em;
+        }
+
+        .article-pager .pager-next { text-align: right; margin-left: auto; }
+        .article-pager .pager-empty { visibility: hidden; }
 
         h1, h2, h3, h4, h5, h6 {
             color: var(--text-main);
@@ -229,9 +319,37 @@
             font-family: var(--font-sans);
             margin-top: 4rem;
         }
+
+        /* Theme toggle button */
+        .theme-toggle {
+            position: fixed;
+            top: 1rem;
+            right: 1.25rem;
+            z-index: 100;
+            width: 2.4rem;
+            height: 2.4rem;
+            border-radius: 50%;
+            border: 1px solid var(--border-color);
+            background: transparent;
+            color: var(--text-muted);
+            font-size: 1.05rem;
+            line-height: 1;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.15s ease, border-color 0.15s ease, background-color 0.25s ease;
+        }
+
+        .theme-toggle:hover {
+            color: var(--text-main);
+            border-color: var(--text-muted);
+        }
     </style>
 </head>
 <body>
+
+    <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Toggle dark mode" title="Toggle dark mode">☾</button>
 
     <main id="content"></main>
 
@@ -282,10 +400,101 @@
                 content.innerHTML = `<div class="status-msg" role="status"><p>${esc(msg)}</p></div>`;
             }
 
+            // localStorage can throw (private mode / file://); guard it.
+            const storage = {
+                get(k) { try { return window.localStorage.getItem(k); } catch { return null; } },
+                set(k, v) { try { window.localStorage.setItem(k, v); } catch { /* ignore */ } }
+            };
+
+            // Update document title + Open Graph / Twitter meta for the current view.
+            function setMeta(title, description) {
+                const setProp = (prop, val) => {
+                    let el = document.querySelector(`meta[property="${prop}"]`);
+                    if (!el) { el = document.createElement("meta"); el.setAttribute("property", prop); document.head.appendChild(el); }
+                    el.setAttribute("content", val);
+                };
+                const setName = (name, val) => {
+                    let el = document.querySelector(`meta[name="${name}"]`);
+                    if (!el) { el = document.createElement("meta"); el.setAttribute("name", name); document.head.appendChild(el); }
+                    el.setAttribute("content", val);
+                };
+
+                document.title = title === "Longform" ? "Longform" : `${title} — Longform`;
+                setProp("og:title", title);
+                setProp("og:url", location.href);
+                setName("twitter:title", title);
+                if (description) {
+                    setProp("og:description", description);
+                    setName("twitter:description", description);
+                }
+            }
+
+            // ---- Theme (dark / light) ------------------------------------------
+            const themeToggle = document.getElementById("theme-toggle");
+            const isDark = () => {
+                const root = document.documentElement;
+                return root.getAttribute("data-theme") === "dark"
+                    || (!root.hasAttribute("data-theme") && window.matchMedia("(prefers-color-scheme: dark)").matches);
+            };
+
+            function applyTheme(theme) {
+                const root = document.documentElement;
+                if (theme === "dark") root.setAttribute("data-theme", "dark");
+                else if (theme === "light") root.setAttribute("data-theme", "light");
+                else root.removeAttribute("data-theme");
+
+                const dark = isDark();
+                themeToggle.textContent = dark ? "☀" : "☾";
+                themeToggle.setAttribute("aria-label", dark ? "Switch to light mode" : "Switch to dark mode");
+
+                const tc = document.querySelector('meta[name="theme-color"]');
+                if (tc) tc.setAttribute("content", dark ? "#171b21" : "#fdf6e3");
+            }
+
+            function initTheme() {
+                const saved = storage.get("theme");
+                applyTheme(saved === "dark" || saved === "light" ? saved : null);
+                themeToggle.addEventListener("click", () => {
+                    applyTheme(isDark() ? "light" : "dark");
+                    storage.set("theme", document.documentElement.getAttribute("data-theme") || "");
+                });
+            }
+
+            // ---- Word count / reading time --------------------------------------
+            function readingStats(html) {
+                const tmp = document.createElement("div");
+                tmp.innerHTML = html;
+                tmp.querySelectorAll("pre, code").forEach(el => el.remove());
+                const words = (tmp.textContent || "").trim().split(/\s+/).filter(Boolean).length;
+                const minutes = Math.max(1, Math.round(words / 200));
+                return { words, minutes };
+            }
+
+            // ---- Heading anchor links -------------------------------------------
+            function addHeadingAnchors(scope) {
+                const counts = {};
+                scope.querySelectorAll("h2, h3, h4, h5").forEach(h => {
+                    const base = h.textContent.trim().toLowerCase()
+                        .replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+                    const slug = base || "section";
+                    counts[slug] = (counts[slug] || 0) + 1;
+                    const id = counts[slug] === 1 ? slug : `${slug}-${counts[slug]}`;
+                    h.id = id;
+                    const link = document.createElement("a");
+                    link.className = "heading-link";
+                    link.href = "#" + id;
+                    link.textContent = "#";
+                    link.setAttribute("aria-hidden", "true");
+                    link.tabIndex = -1;
+                    h.appendChild(link);
+                });
+            }
+
             // ---- Index / table of contents ------------------------------------
             function loadIndex() {
                 loadIndexJson()
                     .then(items => {
+                        setMeta("Longform", "A collection of long-form essays and technical deep-dives.");
                         let html = `
                             <div class="toc-container">
                                 <h1 class="toc-title">Longform</h1>
@@ -323,7 +532,7 @@
                     const indexMeta = indexItems.find(i => i.file === cleanPath) || {};
                     const title = indexMeta.title || meta.title || cleanPath.replace(/\.md$/i, "").replace(/[-_]/g, " ");
                     const date = indexMeta.date || meta.date || "";
-                    const dateHtml = date ? `<div class="article-date">${esc(date)}</div>` : "";
+                    const description = (indexMeta.blurb || meta.description || "").slice(0, 200);
 
                     // Marked output is trusted only after DOMPurify strips scripts/event handlers.
                     let parsedHtml = marked.parse(body);
@@ -331,18 +540,42 @@
                         parsedHtml = DOMPurify.sanitize(parsedHtml);
                     }
 
+                    const { words, minutes } = readingStats(parsedHtml);
+                    const metaParts = [];
+                    if (date) metaParts.push(`<span class="article-date">${esc(date)}</span>`);
+                    metaParts.push(`<span class="reading-time">${minutes} min read · ${words.toLocaleString("en-US")} words</span>`);
+                    const metaHtml = `<div class="article-meta">${metaParts.join('<span class="meta-sep">·</span>')}</div>`;
+
                     parsedHtml = /<h1[^>]*>/i.test(parsedHtml)
-                        ? parsedHtml.replace(/<\/h1>/i, "$&" + dateHtml)
-                        : `<h1>${esc(title)}</h1>${dateHtml}${parsedHtml}`;
+                        ? parsedHtml.replace(/<\/h1>/i, "$&" + metaHtml)
+                        : `<h1>${esc(title)}</h1>${metaHtml}${parsedHtml}`;
+
+                    // Prev / Next navigation in index.json order.
+                    const idx = indexItems.findIndex(i => i.file === cleanPath);
+                    const prev = idx > 0 ? indexItems[idx - 1] : null;
+                    const next = idx >= 0 && idx < indexItems.length - 1 ? indexItems[idx + 1] : null;
+                    let pagerHtml = `<div class="article-pager">`;
+                    pagerHtml += prev
+                        ? `<a class="pager-prev" href="?file=${encodeURIComponent(prev.file)}"><span class="pager-label">&larr; Previous</span>${esc(prev.title)}</a>`
+                        : `<span class="pager-empty"></span>`;
+                    pagerHtml += next
+                        ? `<a class="pager-next" href="?file=${encodeURIComponent(next.file)}"><span class="pager-label">Next &rarr;</span>${esc(next.title)}</a>`
+                        : `<span class="pager-empty"></span>`;
+                    pagerHtml += `</div>`;
 
                     content.innerHTML = `
                         <nav class="nav-header" aria-label="Article navigation"><a href="?">&larr; Back to Library</a></nav>
-                        <div>${parsedHtml}</div>
+                        <article class="article-body">${parsedHtml}</article>
+                        ${pagerHtml}
                         <nav class="nav-footer" aria-label="Footer navigation"><a href="?">&larr; Back to Library</a></nav>`;
+
+                    addHeadingAnchors(content.querySelector(".article-body"));
+                    setMeta(title, description);
                 })
                 .catch(err => renderError(`Unable to load '${cleanPath}': HTTP ${err}`));
             }
 
+            initTheme();
             fileParam ? loadArticle(fileParam) : loadIndex();
         });
     </script>
