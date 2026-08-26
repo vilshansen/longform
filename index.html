@@ -205,7 +205,7 @@
             opacity: 0.75;
         }
 
-        /* Article bottom navigation — previous / back / next on one line */
+        /* Article bottom navigation — previous / next on one line */
         .article-pager {
             display: flex;
             align-items: center;
@@ -228,13 +228,6 @@
         .article-pager .pager-prev { text-align: left; }
         .article-pager .pager-next { text-align: right; }
 
-        .article-pager .pager-back {
-            flex: 1;
-            text-align: center;
-            white-space: nowrap;
-            color: var(--text-muted);
-        }
-
         .article-pager a {
             color: var(--link-color);
             text-decoration: none;
@@ -242,7 +235,6 @@
         }
 
         .article-pager a:hover { opacity: 0.8; }
-        .article-pager .pager-back:hover { color: var(--text-main); }
 
         h1, h2, h3, h4, h5, h6 {
             color: var(--text-main);
@@ -670,7 +662,6 @@
                         ? `<a href="?file=${encodeURIComponent(prev.file)}" title="Previous: ${esc(prev.title)}">&larr; ${esc(prev.title)}</a>`
                         : ``;
                     pagerHtml += `</span>`;
-                    pagerHtml += `<a class="pager-back" href="?">Back to Library</a>`;
                     pagerHtml += `<span class="pager-slot pager-next">`;
                     pagerHtml += next
                         ? `<a href="?file=${encodeURIComponent(next.file)}" title="Next: ${esc(next.title)}">${esc(next.title)} &rarr;</a>`
