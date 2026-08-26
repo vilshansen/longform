@@ -367,16 +367,96 @@
                 .replace(/"/g, "&quot;")
                 .replace(/'/g, "&#39;");
 
-            // Cache index.json so it's only fetched once per page load.
-            let indexPromise = null;
-            const loadIndexJson = () => {
-                if (!indexPromise) {
-                    indexPromise = fetch("index.json")
-                        .then(r => r.ok ? r.json() : Promise.reject(r.status))
-                        .catch(err => { indexPromise = null; throw err; });
+            // ---- Article discovery & metadata -----------------------------------
+            // Static hosting can't enumerate files, so we ask the GitHub API for the
+            // file list once and cache it locally (the API allows ~60 requests/hour).
+            // Update these if the repo is renamed or moved.
+            const REPO = "vilshansen/longform";
+            const BRANCH = "main";
+            const FILES_KEY = "longform.files";
+            const CACHE_TTL = 60 * 60 * 1000; // 1 hour
+
+            function readFileCache() {
+                try {
+                    const raw = storage.get(FILES_KEY);
+                    if (!raw) return null;
+                    const data = JSON.parse(raw);
+                    return Array.isArray(data.files) ? data : null;
+                } catch { return null; }
+            }
+
+            // Resolve to the sorted list of root .md filenames (cached).
+            function listArticleFiles() {
+                const cached = readFileCache();
+                if (cached && Date.now() - cached.ts < CACHE_TTL) {
+                    return Promise.resolve(cached.files);
                 }
-                return indexPromise;
-            };
+                return fetch(`https://api.github.com/repos/${REPO}/contents/?ref=${BRANCH}`)
+                    .then(r => r.ok ? r.json() : Promise.reject(r.status))
+                    .then(entries => {
+                        const files = entries
+                            .filter(e => e.type === "file" && /\.md$/i.test(e.name))
+                            .map(e => e.name)
+                            .sort();
+                        storage.set(FILES_KEY, JSON.stringify({ ts: Date.now(), files }));
+                        return files;
+                    })
+                    .catch(err => {
+                        // Fall back to a stale cache rather than failing outright.
+                        if (cached) return cached.files;
+                        throw err;
+                    });
+            }
+
+            // Title: capitalise each word of the filename, minus dashes/underscores.
+            function titleFromFilename(name) {
+                return name.replace(/\.md$/i, "")
+                    .split(/[-_]+/)
+                    .filter(Boolean)
+                    .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+                    .join(" ");
+            }
+
+            function formatDate(date) {
+                if (!date || isNaN(date.getTime())) return "";
+                return date.toLocaleDateString("en-GB", { timeZone: "UTC", day: "numeric", month: "short", year: "numeric" });
+            }
+
+            function truncate(text, max = 200) {
+                if (!text) return "";
+                return text.length > max ? text.slice(0, max - 1).trimEnd() + "…" : text;
+            }
+
+            // Blurb: front-matter `blurb:` wins; otherwise the first paragraph.
+            function extractBlurb(parsedHtml, fallback = "") {
+                if (fallback) return truncate(fallback);
+                const tmp = document.createElement("div");
+                tmp.innerHTML = parsedHtml;
+                const p = tmp.querySelector("p");
+                return truncate((p ? p.textContent : tmp.textContent || "").trim());
+            }
+
+            // Fetch one article and derive its metadata + parsed body.
+            function fetchArticleMeta(name) {
+                return fetch(name)
+                    .then(r => r.ok
+                        ? r.text().then(text => ({ text, lastModified: r.headers.get("Last-Modified") }))
+                        : Promise.reject(r.status))
+                    .then(({ text, lastModified }) => {
+                        const { meta, body } = splitFrontMatter(text);
+                        const parsedHtml = (typeof marked !== "undefined") ? marked.parse(body) : "";
+                        const title = meta.title || titleFromFilename(name);
+                        const date = meta.date || (lastModified ? formatDate(new Date(lastModified)) : "");
+                        const blurb = extractBlurb(parsedHtml, meta.blurb || meta.description);
+                        return { file: name, title, date, blurb, meta, body, parsedHtml };
+                    });
+            }
+
+            // Newest-first ordering (dates come from Last-Modified / front matter).
+            function sortByDate(items) {
+                const score = (d) => d ? (Date.parse(d) || 0) : 0;
+                items.sort((a, b) => score(b.date) - score(a.date));
+            }
 
             // Split optional YAML front matter from a Markdown document.
             // Robust to a missing front-matter block or a '---' appearing later in the body.
@@ -491,69 +571,74 @@
             }
 
             // ---- Index / table of contents ------------------------------------
-            function loadIndex() {
-                loadIndexJson()
-                    .then(items => {
-                        setMeta("Longform", "A collection of long-form essays and technical deep-dives.");
-                        let html = `
-                            <div class="toc-container">
-                                <h1 class="toc-title">Longform</h1>
-                                <p class="toc-intro">Welcome. Below is the full collection of essays, ranging from technical deep-dives to broader personal reflections. My hope is that you find something here that catches your eye. If not, feel free to check back later to see what's new.</p>
-                                <ul class="toc-list">`;
+            async function loadIndex() {
+                content.innerHTML = `<div class="status-msg" role="status"><p>Loading…</p></div>`;
+                try {
+                    const files = await listArticleFiles();
+                    const settled = await Promise.allSettled(files.map(f => fetchArticleMeta(f)));
+                    const items = settled.filter(s => s.status === "fulfilled").map(s => s.value);
+                    sortByDate(items);
+                    setMeta("Longform", "A collection of long-form essays and technical deep-dives.");
 
-                        items.forEach(i => {
-                            const href = `?file=${encodeURIComponent(i.file)}`;
-                            html += `
-                                <li class="toc-item">
-                                    <a class="toc-link" href="${href}">${esc(i.title)}</a>${i.date ? `<span class="toc-date">${esc(i.date)}</span>` : ""}
-                                    ${i.blurb ? `<div class="toc-blurb">${esc(i.blurb)}</div>` : ""}
-                                </li>`;
-                        });
-                        content.innerHTML = html + `</ul></div>`;
-                    })
-                    .catch(err => renderError(`Unable to load index.json: HTTP ${err}`));
+                    let html = `
+                        <div class="toc-container">
+                            <h1 class="toc-title">Longform</h1>
+                            <p class="toc-intro">Welcome. Below is the full collection of essays, ranging from technical deep-dives to broader personal reflections. My hope is that you find something here that catches your eye. If not, feel free to check back later to see what's new.</p>
+                            <ul class="toc-list">`;
+
+                    items.forEach(i => {
+                        const href = `?file=${encodeURIComponent(i.file)}`;
+                        html += `
+                            <li class="toc-item">
+                                <a class="toc-link" href="${href}">${esc(i.title)}</a>${i.date ? `<span class="toc-date">${esc(i.date)}</span>` : ""}
+                                ${i.blurb ? `<div class="toc-blurb">${esc(i.blurb)}</div>` : ""}
+                            </li>`;
+                    });
+                    content.innerHTML = html + `</ul></div>`;
+                } catch (err) {
+                    renderError(`Unable to load the library: ${err.message || err}`);
+                }
             }
 
             // ---- Single article -------------------------------------------------
-            function loadArticle(filename) {
+            async function loadArticle(filename) {
                 const cleanPath = filename.replace(/^(\.\/|\/)+/, "");
+                content.innerHTML = `<div class="status-msg" role="status"><p>Loading…</p></div>`;
+                try {
+                    const files = await listArticleFiles();
+                    const settled = await Promise.allSettled(files.map(f => fetchArticleMeta(f)));
+                    const items = settled.filter(s => s.status === "fulfilled").map(s => s.value);
+                    let current = items.find(i => i.file === cleanPath);
+                    if (!current) { // allow direct access even if not yet in the cached list
+                        current = await fetchArticleMeta(cleanPath);
+                        items.push(current);
+                    }
+                    sortByDate(items);
 
-                Promise.all([
-                    fetch(cleanPath).then(r => r.ok ? r.text() : Promise.reject(r.status)),
-                    loadIndexJson().catch(() => [])
-                ])
-                .then(([rawText, indexItems]) => {
                     if (typeof marked === "undefined") {
                         renderError("This page needs the Marked.js library to render, but it failed to load. Please reload.");
                         return;
                     }
 
-                    const { meta, body } = splitFrontMatter(rawText);
-                    const indexMeta = indexItems.find(i => i.file === cleanPath) || {};
-                    const title = indexMeta.title || meta.title || cleanPath.replace(/\.md$/i, "").replace(/[-_]/g, " ");
-                    const date = indexMeta.date || meta.date || "";
-                    const description = (indexMeta.blurb || meta.description || "").slice(0, 200);
+                    const { title, date, blurb, parsedHtml } = current;
 
                     // Marked output is trusted only after DOMPurify strips scripts/event handlers.
-                    let parsedHtml = marked.parse(body);
-                    if (typeof DOMPurify !== "undefined") {
-                        parsedHtml = DOMPurify.sanitize(parsedHtml);
-                    }
+                    let safeHtml = (typeof DOMPurify !== "undefined") ? DOMPurify.sanitize(parsedHtml) : parsedHtml;
 
-                    const { words, minutes } = readingStats(parsedHtml);
+                    const { words, minutes } = readingStats(safeHtml);
                     const metaParts = [];
                     if (date) metaParts.push(`<span class="article-date">${esc(date)}</span>`);
                     metaParts.push(`<span class="reading-time">${minutes} min read · ${words.toLocaleString("en-US")} words</span>`);
                     const metaHtml = `<div class="article-meta">${metaParts.join('<span class="meta-sep">·</span>')}</div>`;
 
-                    parsedHtml = /<h1[^>]*>/i.test(parsedHtml)
-                        ? parsedHtml.replace(/<\/h1>/i, "$&" + metaHtml)
-                        : `<h1>${esc(title)}</h1>${metaHtml}${parsedHtml}`;
+                    safeHtml = /<h1[^>]*>/i.test(safeHtml)
+                        ? safeHtml.replace(/<\/h1>/i, "$&" + metaHtml)
+                        : `<h1>${esc(title)}</h1>${metaHtml}${safeHtml}`;
 
-                    // Prev / Next navigation in index.json order.
-                    const idx = indexItems.findIndex(i => i.file === cleanPath);
-                    const prev = idx > 0 ? indexItems[idx - 1] : null;
-                    const next = idx >= 0 && idx < indexItems.length - 1 ? indexItems[idx + 1] : null;
+                    // Prev / Next navigation (newest-first order).
+                    const idx = items.findIndex(i => i.file === cleanPath);
+                    const prev = idx > 0 ? items[idx - 1] : null;
+                    const next = idx >= 0 && idx < items.length - 1 ? items[idx + 1] : null;
                     let pagerHtml = `<div class="article-pager">`;
                     pagerHtml += prev
                         ? `<a class="pager-prev" href="?file=${encodeURIComponent(prev.file)}"><span class="pager-label">&larr; Previous</span>${esc(prev.title)}</a>`
@@ -565,14 +650,15 @@
 
                     content.innerHTML = `
                         <nav class="nav-header" aria-label="Article navigation"><a href="?">&larr; Back to Library</a></nav>
-                        <article class="article-body">${parsedHtml}</article>
+                        <article class="article-body">${safeHtml}</article>
                         ${pagerHtml}
                         <nav class="nav-footer" aria-label="Footer navigation"><a href="?">&larr; Back to Library</a></nav>`;
 
                     addHeadingAnchors(content.querySelector(".article-body"));
-                    setMeta(title, description);
-                })
-                .catch(err => renderError(`Unable to load '${cleanPath}': HTTP ${err}`));
+                    setMeta(title, blurb);
+                } catch (err) {
+                    renderError(`Unable to load '${cleanPath}': ${err.message || err}`);
+                }
             }
 
             initTheme();
