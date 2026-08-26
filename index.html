@@ -82,28 +82,20 @@
             max-width: var(--max-width);
         }
 
-        /* Navigation Header & Footer / Back Button */
+        /* Navigation Header / Back Button */
         .nav-header {
             font-family: var(--font-sans);
             font-size: 0.875rem;
             margin-bottom: 2.5rem;
         }
 
-        .nav-footer {
-            font-family: var(--font-sans);
-            font-size: 0.875rem;
-            margin-top: 4rem;
-            padding-top: 2rem;
-            border-top: 1px solid var(--border-color);
-        }
-
-        .nav-header a, .nav-footer a {
+        .nav-header a {
             color: var(--text-muted);
             text-decoration: none;
             transition: color 0.15s ease;
         }
 
-        .nav-header a:hover, .nav-footer a:hover {
+        .nav-header a:hover {
             color: var(--text-main);
         }
 
@@ -213,16 +205,34 @@
             opacity: 0.75;
         }
 
-        /* Prev / Next article pager */
+        /* Article bottom navigation — previous / back / next on one line */
         .article-pager {
             display: flex;
-            justify-content: space-between;
-            gap: 1.5rem;
+            align-items: center;
+            gap: 1rem;
             margin-top: 3rem;
             padding-top: 1.5rem;
             border-top: 1px solid var(--border-color);
             font-family: var(--font-sans);
             font-size: 0.9rem;
+        }
+
+        .article-pager .pager-slot {
+            flex: 1;
+            min-width: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .article-pager .pager-prev { text-align: left; }
+        .article-pager .pager-next { text-align: right; }
+
+        .article-pager .pager-back {
+            flex: 1;
+            text-align: center;
+            white-space: nowrap;
+            color: var(--text-muted);
         }
 
         .article-pager a {
@@ -232,18 +242,7 @@
         }
 
         .article-pager a:hover { opacity: 0.8; }
-
-        .article-pager .pager-label {
-            display: block;
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            color: var(--text-muted);
-            margin-bottom: 0.2em;
-        }
-
-        .article-pager .pager-next { text-align: right; margin-left: auto; }
-        .article-pager .pager-empty { visibility: hidden; }
+        .article-pager .pager-back:hover { color: var(--text-main); }
 
         h1, h2, h3, h4, h5, h6 {
             color: var(--text-main);
@@ -643,24 +642,28 @@
                         ? safeHtml.replace(/<\/h1>/i, "$&" + metaHtml)
                         : `<h1>${esc(title)}</h1>${metaHtml}${safeHtml}`;
 
-                    // Prev / Next navigation (newest-first order).
+                    // Prev / Next / Back navigation (newest-first order), one compact line.
                     const idx = items.findIndex(i => i.file === cleanPath);
                     const prev = idx > 0 ? items[idx - 1] : null;
                     const next = idx >= 0 && idx < items.length - 1 ? items[idx + 1] : null;
-                    let pagerHtml = `<div class="article-pager">`;
+                    let pagerHtml = `<nav class="article-pager" aria-label="Article navigation">`;
+                    pagerHtml += `<span class="pager-slot pager-prev">`;
                     pagerHtml += prev
-                        ? `<a class="pager-prev" href="?file=${encodeURIComponent(prev.file)}"><span class="pager-label">&larr; Previous</span>${esc(prev.title)}</a>`
-                        : `<span class="pager-empty"></span>`;
+                        ? `<a href="?file=${encodeURIComponent(prev.file)}" title="Previous: ${esc(prev.title)}">&larr; ${esc(prev.title)}</a>`
+                        : ``;
+                    pagerHtml += `</span>`;
+                    pagerHtml += `<a class="pager-back" href="?">&larr; Back to Library</a>`;
+                    pagerHtml += `<span class="pager-slot pager-next">`;
                     pagerHtml += next
-                        ? `<a class="pager-next" href="?file=${encodeURIComponent(next.file)}"><span class="pager-label">Next &rarr;</span>${esc(next.title)}</a>`
-                        : `<span class="pager-empty"></span>`;
-                    pagerHtml += `</div>`;
+                        ? `<a href="?file=${encodeURIComponent(next.file)}" title="Next: ${esc(next.title)}">${esc(next.title)} &rarr;</a>`
+                        : ``;
+                    pagerHtml += `</span>`;
+                    pagerHtml += `</nav>`;
 
                     content.innerHTML = `
                         <nav class="nav-header" aria-label="Article navigation"><a href="?">&larr; Back to Library</a></nav>
                         <article class="article-body">${safeHtml}</article>
-                        ${pagerHtml}
-                        <nav class="nav-footer" aria-label="Footer navigation"><a href="?">&larr; Back to Library</a></nav>`;
+                        ${pagerHtml}`;
 
                     addHeadingAnchors(content.querySelector(".article-body"));
                     setMeta(title, blurb);
