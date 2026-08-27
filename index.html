@@ -13,9 +13,9 @@
                 var tc = document.querySelector('meta[name="theme-color"]');
                 if (tc) tc.setAttribute("content", dark ? "#171b21" : "#fdf6e3");
             } catch (e) {
-                if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
-                    document.documentElement.setAttribute("data-theme", "dark");
-                }
+                // localStorage unavailable — follow the OS preference.
+                document.documentElement.setAttribute("data-theme",
+                    window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
             }
         })();
     </script>
@@ -53,7 +53,7 @@
             --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         }
 
-        /* Dark theme — manual override (data-theme) or system preference */
+        /* Dark theme — data-theme is set explicitly before first paint */
         :root[data-theme="dark"] {
             --bg-color: #171b21;
             --text-main: #d7dde6;
@@ -61,17 +61,6 @@
             --border-color: #323a46;
             --code-bg: #1f252e;
             --link-color: #6fb3e8;
-        }
-
-        @media (prefers-color-scheme: dark) {
-            :root:not([data-theme="light"]) {
-                --bg-color: #171b21;
-                --text-main: #d7dde6;
-                --text-muted: #8a94a3;
-                --border-color: #323a46;
-                --code-bg: #1f252e;
-                --link-color: #6fb3e8;
-            }
         }
 
         * {
@@ -118,10 +107,6 @@
         }
 
         /* Index / Table of Contents Styling */
-        .toc-container {
-            font-family: var(--font-serif);
-        }
-
         .toc-title {
             font-family: var(--font-display);
             font-size: 3.2rem;
@@ -394,10 +379,9 @@
                 } catch { return null; }
             }
 
-            // Resolve the library: sorted root .md filenames + each file's last-commit
-            // date (cached). GitHub Pages' Last-Modified header is the deploy time and
-            // identical for every file, so real per-post timestamps come from the
-            // per-file commits API instead.
+            // Sorted .md filenames + per-file last-commit dates (cached). Pages'
+            // Last-Modified is the deploy time for every file, so real post times
+            // come from the per-file commits API.
             function fetchLibrary() {
                 const cached = readLibraryCache();
                 // ?refresh=1 bypasses the cache so a freshly-published post shows up immediately.
@@ -488,7 +472,7 @@
                     });
             }
 
-            // Newest-first ordering by full timestamp (Last-Modified / front matter).
+            // Newest-first ordering by full timestamp (commit / front-matter date).
             function sortByDate(items) {
                 items.sort((a, b) => (b.dateMs || 0) - (a.dateMs || 0));
             }
@@ -546,32 +530,22 @@
 
             // ---- Theme (dark / light) ------------------------------------------
             const themeToggle = document.getElementById("theme-toggle");
-            const isDark = () => {
-                const root = document.documentElement;
-                return root.getAttribute("data-theme") === "dark"
-                    || (!root.hasAttribute("data-theme") && window.matchMedia("(prefers-color-scheme: dark)").matches);
-            };
 
             function applyTheme(theme) {
-                const root = document.documentElement;
-                if (theme === "dark") root.setAttribute("data-theme", "dark");
-                else if (theme === "light") root.setAttribute("data-theme", "light");
-                else root.removeAttribute("data-theme");
-
-                const dark = isDark();
-                themeToggle.textContent = dark ? "☀" : "☾";
-                themeToggle.setAttribute("aria-label", dark ? "Switch to light mode" : "Switch to dark mode");
-
+                document.documentElement.setAttribute("data-theme", theme);
+                themeToggle.textContent = theme === "dark" ? "☀" : "☾";
+                themeToggle.setAttribute("aria-label", theme === "dark" ? "Switch to light mode" : "Switch to dark mode");
                 const tc = document.querySelector('meta[name="theme-color"]');
-                if (tc) tc.setAttribute("content", dark ? "#171b21" : "#fdf6e3");
+                if (tc) tc.setAttribute("content", theme === "dark" ? "#171b21" : "#fdf6e3");
             }
 
             function initTheme() {
                 const saved = storage.get("theme");
-                applyTheme(saved === "dark" || saved === "light" ? saved : null);
+                applyTheme(saved === "dark" || (saved !== "light" && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light");
                 themeToggle.addEventListener("click", () => {
-                    applyTheme(isDark() ? "light" : "dark");
-                    storage.set("theme", document.documentElement.getAttribute("data-theme") || "");
+                    const next = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
+                    applyTheme(next);
+                    storage.set("theme", next);
                 });
             }
 
@@ -662,7 +636,7 @@
 
                     const { words, minutes } = readingStats(safeHtml);
                     const metaParts = [];
-                    if (date) metaParts.push(`<span class="article-date">${esc(date)}</span>`);
+                    if (date) metaParts.push(`<span>${esc(date)}</span>`);
                     metaParts.push(`<span class="reading-time">${minutes} min read · ${words.toLocaleString("en-US")} words</span>`);
                     const metaHtml = `<div class="article-meta">${metaParts.join('<span class="meta-sep">·</span>')}</div>`;
 
@@ -670,8 +644,8 @@
                         ? safeHtml.replace(/<\/h1>/i, "$&" + metaHtml)
                         : `<h1>${esc(title)}</h1>${metaHtml}${safeHtml}`;
 
-                    // Prev / Next / Back navigation (newest-first order), one compact line.
-                    const idx = items.findIndex(i => i.file === cleanPath);
+                    // Prev / Next navigation (newest-first order), one compact line.
+                    const idx = items.indexOf(current);
                     const prev = idx > 0 ? items[idx - 1] : null;
                     const next = idx >= 0 && idx < items.length - 1 ? items[idx + 1] : null;
                     let pagerHtml = `<nav class="article-pager" aria-label="Article navigation">`;
