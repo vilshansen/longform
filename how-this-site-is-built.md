@@ -1,6 +1,6 @@
 This site is built around a single core philosophy: **absolute structural simplicity with zero build overhead**.
 
-There are no Node.js dependencies, complex static site generators (like Hugo or Gatsby), or build pipelines. Publishing a new post requires nothing more than committing a standard `.md` file to a Git repository.
+There are no Node.js dependencies, complex static site generators (like Hugo or Gatsby), or build pipelines. Publishing a new post requires adding its metadata to `index.json`, committing the manifest and standard `.md` file, and pushing to the Git repository.
 
 ## Architecture \& Data Flow
 
