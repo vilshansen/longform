@@ -15,7 +15,46 @@ if [[ -n "$SLUG" ]]; then
         echo "No draft found: $draft" >&2
         exit 1
     fi
-    mv "$draft" "$ROOT/${SLUG%.md}.md"
+    published="$ROOT/${SLUG%.md}.md"
+    BLURB="$(sed -n 's/^blurb:[[:space:]]*//p' "$draft" | head -n 1)"
+    if [[ -z "$BLURB" ]]; then
+        echo "No blurb found in draft: $draft" >&2
+        exit 1
+    fi
+
+    ROOT="$ROOT" DRAFT="$draft" PUBLISHED="$published" SLUG="${SLUG%.md}" BLURB="$BLURB" python3 <<'PY'
+import json
+import os
+import re
+from datetime import datetime
+from pathlib import Path
+
+root = Path(os.environ["ROOT"])
+draft = Path(os.environ["DRAFT"])
+published = Path(os.environ["PUBLISHED"])
+slug = os.environ["SLUG"]
+blurb = os.environ["BLURB"]
+text = draft.read_text(encoding="utf-8")
+
+match = re.match(r"\A---\r?\n.*?\r?\n---\r?\n(?:\r?\n)?", text, re.DOTALL)
+if not match:
+    raise SystemExit(f"Draft has no metadata block: {draft}")
+
+body = text[match.end():]
+heading = re.search(r"^#\s+(.+?)\s*$", body, re.MULTILINE)
+title = heading.group(1).strip() if heading else slug.replace("-", " ").title()
+manifest_path = root / "index.json"
+posts = json.loads(manifest_path.read_text(encoding="utf-8"))
+entry = {"file": f"{slug}.md", "title": title,
+         "date": datetime.now().astimezone().isoformat(timespec="seconds"),
+         "blurb": blurb}
+posts = [post for post in posts if post.get("file") != entry["file"]]
+posts.append(entry)
+posts.sort(key=lambda post: post.get("date", ""), reverse=True)
+manifest_path.write_text(json.dumps(posts, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+published.write_text(body, encoding="utf-8")
+draft.unlink()
+PY
     echo "Moved drafts/${SLUG%.md}.md -> ${SLUG%.md}.md"
 fi
 

@@ -1,6 +1,6 @@
 This site is built around a single core philosophy: **absolute structural simplicity with zero build overhead**.
 
-There are no Node.js dependencies, complex static site generators (like Hugo or Gatsby), or build pipelines. Publishing a new post requires adding its metadata to `index.json`, committing the manifest and standard `.md` file, and pushing to the Git repository.
+There are no Node.js dependencies, complex static site generators (like Hugo or Gatsby), or build pipelines. `new-post.sh` asks for a blurb when a draft is created; `publish.sh` derives the title and publication date, updates `index.json`, and pushes the manifest and standard `.md` file to the Git repository.
 
 ## Architecture \& Data Flow
 
@@ -46,5 +46,5 @@ When a post link is selected (e.g., `?file=architecture-notes.md`):
 
 * **Zero Build Steps**: No `npm install`, zero security vulnerabilities in `node\_modules`, and no compilation steps.
 * **Portability**: The entire codebase consists of plain text files that run locally on any simple HTTP web server.
-* **Pure Git Workflow**: Writing and publishing requires creating a `.md` file, adding its title, blurb, and publication date to `index.json`, and running `git push`.
+* **Pure Git Workflow**: Writing and publishing requires running `new-post.sh`, writing the draft, and running `publish.sh`; the latter updates `index.json` automatically.
 

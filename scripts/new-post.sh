@@ -16,6 +16,12 @@ if [[ -z "$TITLE" ]]; then
     exit 1
 fi
 
+read -r -p "Post blurb: " BLURB
+if [[ -z "$BLURB" ]]; then
+    echo "No blurb given; aborting." >&2
+    exit 1
+fi
+
 slug="$(printf '%s' "$TITLE" \
     | tr '[:upper:]' '[:lower:]' \
     | sed -E 's/[^a-z0-9]+/-/g; s/^-+|-+$//g')"
@@ -28,6 +34,10 @@ if [[ -e "$file" ]]; then
 fi
 
 {
+    printf -- '---\n'
+    printf 'blurb: %s\n' "$BLURB"
+    printf -- '---\n'
+    printf '\n'
     printf '# %s\n' "$TITLE"
     printf '\n'
     printf 'Start writing…\n'
@@ -35,4 +45,4 @@ fi
 
 echo "Created $file — opening nano. Write, then Ctrl+X, Y, Enter to save."
 nano "$file"
-echo "Saved. Add this post to index.json, then publish with: ./scripts/publish.sh $slug"
+echo "Saved. When ready, publish with: ./scripts/publish.sh $slug"
