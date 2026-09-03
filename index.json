@@ -1,5 +1,17 @@
 [
   {
+    "file": "trying-something-new.md",
+    "title": "Trying Something New",
+    "date": "2026-09-03T18:58:34+02:00",
+    "blurb": "It's time to try something new..."
+  },
+  {
+    "file": "still-no-news.md",
+    "title": "Sample",
+    "date": "2026-09-03T18:52:02+02:00",
+    "blurb": "Would you believe it? There's _still_ no news!"
+  },
+  {
     "file": "with-love-from-github.md",
     "title": "With Love From GitHub",
     "date": "2026-08-27T08:09:35+02:00",
@@ -28,11 +40,5 @@
     "title": "Sample",
     "date": "2026-08-25T21:12:02+02:00",
     "blurb": "Urban space has historically been defined by density and acoustic overflow."
-  },
-  {
-    "file": "still-no-news.md",
-    "title": "Sample",
-    "date": "2026-09-03T18:52:02+02:00",
-    "blurb": "Would you believe it? There's _still_ no news!"
   }
 ]
