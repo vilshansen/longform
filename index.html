@@ -362,70 +362,23 @@
                 .replace(/'/g, "&#39;");
 
             // ---- Article discovery & metadata -----------------------------------
-            // Static hosting can't enumerate files, so we ask the GitHub API for the
-            // file list once and cache it locally (the API allows ~60 requests/hour).
-            // Update these if the repo is renamed or moved.
-            const REPO = "vilshansen/longform";
-            const BRANCH = "main";
-            const LIBRARY_KEY = "longform.library";
-            const CACHE_TTL = 30 * 60 * 1000; // 30 minutes — keeps the per-file commits calls within the 60 req/hr API limit
-
-            function readLibraryCache() {
-                try {
-                    const raw = storage.get(LIBRARY_KEY);
-                    if (!raw) return null;
-                    const data = JSON.parse(raw);
-                    return (Array.isArray(data.files) && data.dates && typeof data.dates === "object") ? data : null;
-                } catch { return null; }
-            }
-
-            // Sorted .md filenames + per-file last-commit dates (cached). Pages'
-            // Last-Modified is the deploy time for every file, so real post times
-            // come from the per-file commits API.
+            // index.json is the single source of truth for published articles.
             function fetchLibrary() {
-                const cached = readLibraryCache();
-                // ?refresh=1 bypasses the cache so a freshly-published post shows up immediately.
-                const force = new URLSearchParams(window.location.search).has("refresh");
-                if (!force && cached && Date.now() - cached.ts < CACHE_TTL) {
-                    return Promise.resolve(cached);
-                }
-
-                return fetch(`https://api.github.com/repos/${REPO}/contents/?ref=${BRANCH}`)
+                return fetch("index.json")
                     .then(r => r.ok ? r.json() : Promise.reject(r.status))
-                    .then(entries => entries
-                        .filter(e => e.type === "file" && /\.md$/i.test(e.name))
-                        .map(e => e.name)
-                        .sort())
-                    .then(files => Promise.all(files.map(name =>
-                        fetch(`https://api.github.com/repos/${REPO}/commits?path=${encodeURIComponent(name)}&sha=${BRANCH}&per_page=1`)
-                            .then(r => r.ok ? r.json() : [])
-                            .then(commits => {
-                                const committer = commits[0] && commits[0].commit && commits[0].commit.committer;
-                                return [name, committer ? committer.date : ""];
-                            })
-                            .catch(() => [name, ""])
-                    )))
-                    .then(pairs => {
-                        const dates = {};
-                        pairs.forEach(([name, iso]) => { if (iso) dates[name] = iso; });
-                        const data = { ts: Date.now(), files: pairs.map(p => p[0]), dates };
-                        storage.set(LIBRARY_KEY, JSON.stringify(data));
-                        return data;
-                    })
-                    .catch(err => {
-                        // Fall back to a stale cache rather than failing outright.
-                        if (cached) return cached;
-                        throw err;
+                    .then(posts => {
+                        if (!Array.isArray(posts)) throw new Error("index.json must contain an array");
+                        posts.forEach(post => {
+                            if (!post.file || !post.title || !post.date) {
+                                throw new Error("index.json contains an incomplete entry");
+                            }
+                        });
+                        return posts.map(post => ({
+                            ...post,
+                            dateMs: Date.parse(post.date) || 0,
+                            date: (Date.parse(post.date) ? formatDate(new Date(post.date)) : post.date)
+                        })).sort((a, b) => b.dateMs - a.dateMs);
                     });
-            }
-
-            // Title: capitalise each word of the filename, minus dashes/underscores.
-            function titleFromFilename(name) {
-                return name.replace(/\.md$/i, "")
-                    .split(/[-_]+/)
-                    .filter(Boolean)
-                    .map(w => w.charAt(0).toUpperCase() + w.slice(1))
-                    .join(" ");
             }
 
             function formatDate(date) {
@@ -442,33 +395,17 @@
                 return text.length > max ? text.slice(0, max - 1).trimEnd() + "…" : text;
             }
 
-            // Blurb: front-matter `blurb:` wins; otherwise the first paragraph.
-            function extractBlurb(parsedHtml, fallback = "") {
-                if (fallback) return truncate(fallback);
-                const tmp = document.createElement("div");
-                tmp.innerHTML = parsedHtml;
-                const p = tmp.querySelector("p");
-                return truncate((p ? p.textContent : tmp.textContent || "").trim());
-            }
-
-            // Fetch one article and derive its metadata + parsed body.
-            // `dates` maps filename -> ISO last-commit date (from fetchLibrary).
-            function fetchArticleMeta(name, dates = {}) {
-                return fetch(name)
+            // Fetch one article body; title, date, and blurb come from index.json.
+            function fetchArticleMeta(post) {
+                return fetch(post.file)
                     .then(r => r.ok
-                        ? r.text().then(text => ({ text, lastModified: r.headers.get("Last-Modified") }))
+                        ? r.text()
                         : Promise.reject(r.status))
-                    .then(({ text, lastModified }) => {
-                        const { meta, body } = splitFrontMatter(text);
+                    .then(text => {
+                        const { body } = splitFrontMatter(text);
                         const parsedHtml = (typeof marked !== "undefined") ? marked.parse(body) : "";
-                        const title = meta.title || titleFromFilename(name);
-                        const commitMs = dates[name] ? Date.parse(dates[name]) : 0;
-                        const headerMs = lastModified ? new Date(lastModified).getTime() : 0;
-                        // Precedence: front-matter date > last-commit date > Last-Modified header.
-                        const dateMs = (meta.date ? (Date.parse(meta.date) || 0) : (commitMs || headerMs)) || 0;
-                        const date = meta.date || (dateMs ? formatDate(new Date(dateMs)) : "");
-                        const blurb = extractBlurb(parsedHtml, meta.blurb || meta.description);
-                        return { file: name, title, date, dateMs, blurb, meta, body, parsedHtml };
+                        const dateMs = post.dateMs || Date.parse(post.date) || 0;
+                        return { ...post, date: dateMs ? formatDate(new Date(dateMs)) : post.date, dateMs, body, parsedHtml };
                     });
             }
 
@@ -583,10 +520,7 @@
             async function loadIndex() {
                 content.innerHTML = `<div class="status-msg" role="status"><p>Loading…</p></div>`;
                 try {
-                    const lib = await fetchLibrary();
-                    const settled = await Promise.allSettled(lib.files.map(f => fetchArticleMeta(f, lib.dates)));
-                    const items = settled.filter(s => s.status === "fulfilled").map(s => s.value);
-                    sortByDate(items);
+                    const items = await fetchLibrary();
                     setMeta("Longform", "A collection of long-form essays and technical deep-dives.");
 
                     let html = `
@@ -614,15 +548,12 @@
                 const cleanPath = filename.replace(/^(\.\/|\/)+/, "");
                 content.innerHTML = `<div class="status-msg" role="status"><p>Loading…</p></div>`;
                 try {
-                    const lib = await fetchLibrary();
-                    const settled = await Promise.allSettled(lib.files.map(f => fetchArticleMeta(f, lib.dates)));
-                    const items = settled.filter(s => s.status === "fulfilled").map(s => s.value);
-                    let current = items.find(i => i.file === cleanPath);
-                    if (!current) { // allow direct access even if not yet in the cached list
-                        current = await fetchArticleMeta(cleanPath);
-                        items.push(current);
-                    }
-                    sortByDate(items);
+                    const manifest = await fetchLibrary();
+                    const items = manifest;
+                    const currentEntry = items.find(i => i.file === cleanPath);
+                    if (!currentEntry) throw new Error("Article is not listed in index.json");
+                    const current = await fetchArticleMeta(currentEntry);
+                    items[items.indexOf(currentEntry)] = current;
 
                     if (typeof marked === "undefined") {
                         renderError("This page needs the Marked.js library to render, but it failed to load. Please reload.");

@@ -1,0 +1,26 @@
+[
+  {
+    "file": "artworxx.md",
+    "title": "Artworxx",
+    "date": "2026-08-26T17:53:47+02:00",
+    "blurb": "This post may have got you wondering just exactly what Artworxx means."
+  },
+  {
+    "file": "the-cold-edge-of-trotternish.md",
+    "title": "The Cold Edge Of Trotternish",
+    "date": "2026-08-25T23:00:03+02:00",
+    "blurb": "The rain over Trotternish did not fall so much as hang, suspended in the salt air like a damp shroud."
+  },
+  {
+    "file": "architecture-notes.md",
+    "title": "Architecture Notes",
+    "date": "2026-08-25T21:12:02+02:00",
+    "blurb": "Modern software systems demand a clear boundary between domain logic and infrastructural concerns."
+  },
+  {
+    "file": "sample.md",
+    "title": "Sample",
+    "date": "2026-08-25T21:12:02+02:00",
+    "blurb": "Urban space has historically been defined by density and acoustic overflow."
+  }
+]

@@ -1,7 +1,3 @@
----
-title: "Artworxx"
----
-
 # Artworxx
 
 This post may have got you wondering just exactly what `Artworxx` means.

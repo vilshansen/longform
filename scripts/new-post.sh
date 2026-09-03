@@ -28,10 +28,6 @@ if [[ -e "$file" ]]; then
 fi
 
 {
-    printf -- '---\n'
-    printf 'title: "%s"\n' "$TITLE"
-    printf -- '---\n'
-    printf '\n'
     printf '# %s\n' "$TITLE"
     printf '\n'
     printf 'Start writing…\n'
@@ -39,4 +35,4 @@ fi
 
 echo "Created $file — opening nano. Write, then Ctrl+X, Y, Enter to save."
 nano "$file"
-echo "Saved. When ready, publish with: ./scripts/publish.sh $slug"
+echo "Saved. Add this post to index.json, then publish with: ./scripts/publish.sh $slug"
